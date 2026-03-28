@@ -1,0 +1,67 @@
+<svg id="svg-dark" width="560" height="180" viewBox="0 0 560 180" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="sc-d">
+              <path d="M100,22 L138,38 L138,96 Q138,124 100,138 Q62,124 62,96 L62,38 Z"/>
+            </clipPath>
+          </defs>
+          <!-- orbit rings -->
+          <circle cx="100" cy="80" r="54" fill="none" stroke="#1a4a28" stroke-width="0.8" stroke-dasharray="2 5" opacity="0.6"/>
+          <circle cx="100" cy="80" r="68" fill="none" stroke="#1a4a28" stroke-width="0.4" stroke-dasharray="1 7" opacity="0.3"/>
+          <!-- grid lines -->
+          <line x1="46" y1="80" x2="154" y2="80" stroke="#2eca6a" stroke-width="0.4" opacity="0.12"/>
+          <line x1="100" y1="26" x2="100" y2="134" stroke="#2eca6a" stroke-width="0.4" opacity="0.12"/>
+          <!-- shield body -->
+          <path d="M100,26 L136,42 L136,96 Q136,122 100,136 Q64,122 64,96 L64,42 Z" fill="#0d2a18" stroke="#1e5c32" stroke-width="1.2"/>
+          <path d="M100,30 L133,45 L133,96 Q133,120 100,133 Q67,120 67,96 L67,45 Z" fill="none" stroke="#2eca6a" stroke-width="0.8" opacity="0.65"/>
+          <!-- shield grid hatch -->
+          <g clip-path="url(#sc-d)" opacity="0.06">
+            <line x1="62" y1="52" x2="138" y2="52" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="64" x2="138" y2="64" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="76" x2="138" y2="76" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="88" x2="138" y2="88" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="100" x2="138" y2="100" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="112" x2="138" y2="112" stroke="#2eca6a" stroke-width="0.8"/>
+            <line x1="62" y1="124" x2="138" y2="124" stroke="#2eca6a" stroke-width="0.8"/>
+          </g>
+          <!-- leaf -->
+          <path d="M100,44 C100,44 82,60 82,74 C82,83.9 90.1,92 100,92 C109.9,92 118,83.9 118,74 C118,60 100,44 100,44 Z" fill="#1a6b3a" stroke="#2eca6a" stroke-width="0.8"/>
+          <path d="M100,74 L100,92" fill="none" stroke="#2eca6a" stroke-width="1" stroke-linecap="round"/>
+          <path d="M100,80 Q94,76 88,77" fill="none" stroke="#2eca6a" stroke-width="0.8" stroke-linecap="round"/>
+          <path d="M100,85 Q106,81 112,82" fill="none" stroke="#2eca6a" stroke-width="0.8" stroke-linecap="round"/>
+          <!-- EKG bar markers -->
+          <line x1="74" y1="107" x2="74" y2="112" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="80" y1="104" x2="80" y2="115" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="86" y1="101" x2="86" y2="119" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="92" y1="99" x2="92" y2="122" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="98" y1="97" x2="98" y2="124" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="104" y1="99" x2="104" y2="122" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="110" y1="101" x2="110" y2="119" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="116" y1="104" x2="116" y2="115" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <line x1="122" y1="107" x2="122" y2="112" stroke="#39e07a" stroke-width="1.6" stroke-linecap="round" opacity="0.9"/>
+          <!-- EKG wave -->
+          <circle cx="63" cy="110" r="2.2" fill="#0d5c2e" stroke="#2eca6a" stroke-width="0.7"/>
+          <circle cx="137" cy="110" r="2.2" fill="#0d5c2e" stroke="#39e07a" stroke-width="0.7"/>
+          <path d="M65,110 L70,108 L75,113 L81,103 L87,110 L100,97 L113,110 L119,103 L125,113 L131,108 L135,110" fill="none" stroke="#2eca6a" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="137" cy="110" r="1.2" fill="#39e07a"/>
+          <!-- corner dots -->
+          <circle cx="48" cy="88" r="1.8" fill="#2eca6a" opacity="0.5"/>
+          <circle cx="152" cy="88" r="1.8" fill="#2eca6a" opacity="0.5"/>
+          <!-- dashed connectors -->
+          <line x1="50" y1="88" x2="64" y2="88" stroke="#2eca6a" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.3"/>
+          <line x1="136" y1="88" x2="150" y2="88" stroke="#2eca6a" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.3"/>
+          <!-- WORDMARK -->
+          <text x="170" y="76" fill="#39e07a" font-family="'Space Grotesk','Courier New',monospace" font-weight="700" font-size="46">La</text>
+          <text x="218" y="76" fill="#ffffff" font-family="'Space Grotesk','Courier New',monospace" font-weight="300" font-size="46">Bio</text>
+          <text x="292" y="76" fill="#39e07a" font-family="'Space Grotesk','Courier New',monospace" font-weight="700" font-size="46">Track</text>
+          <!-- slogan -->
+          <text x="170" y="100" fill="#6aefaa" font-family="'Space Grotesk','Courier New',monospace" font-weight="400" font-size="10.5" letter-spacing="2.8">GESTION NUMÉRIQUE DES DÉCHETS DANGEREUX</text>
+          <!-- dividers -->
+          <line x1="170" y1="108" x2="230" y2="108" stroke="#2eca6a" stroke-width="0.5" opacity="0.4"/>
+          <line x1="390" y1="108" x2="450" y2="108" stroke="#2eca6a" stroke-width="0.5" opacity="0.4"/>
+          <!-- url -->
+          <text x="310" y="108" text-anchor="middle" fill="#2a6a42" font-family="'Courier New',monospace" font-size="8.5" letter-spacing="1.5">labiotrack.com</text>
+          <!-- data micro-bars -->
+          <rect x="170" y="128" width="6" height="3" rx="1" fill="#2eca6a" opacity="0.35"/>
+          <rect x="180" y="128" width="4" height="3" rx="1" fill="#2eca6a" opacity="0.2"/>
+          <rect x="188" y="128" width="5" height="3" rx="1" fill="#2eca6a" opacity="0.35"/>
+        </svg>

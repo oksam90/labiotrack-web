@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"foreign\\\\|index\\\\|unique\" /c/xampp/htdocs/biomed/database/migrations/*.php)",
+      "Bash(grep -n \"qr_code_scan\\\\|numero_bordereau\\\\|certificat_numero\" /c/xampp/htdocs/biomed/app/Http/Controllers/*.php)",
+      "Bash(grep -n \"belongsToMany\\\\|hasMany\\\\|hasOne\\\\|belongsTo\" /c/xampp/htdocs/biomed/app/Models/*.php)",
+      "Bash(grep -n \"qr_code_scan\" /c/xampp/htdocs/biomed/database/migrations/*.php)",
+      "Bash(npm list:*)",
+      "Bash(npm install:*)",
+      "Bash(node generate_report.cjs)",
+      "Bash(python \"C:\\\\Users\\\\user\\\\AppData\\\\Roaming\\\\Claude\\\\local-agent-mode-sessions\\\\skills-plugin\\\\ef754ee8-65b8-47f3-94ed-d59169f312fb\\\\739a88b7-2ca2-4da9-b9fd-86a3cb10c48f\\\\skills\\\\docx\\\\scripts\\\\office\\\\validate.py\" \"C:\\\\xampp\\\\htdocs\\\\biomed\\\\biomed_audit_problemes_hors_portee.docx\")",
+      "Bash(pip install:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(php artisan:*)",
+      "Bash(wc -l \"C:\\\\xampp\\\\htdocs\\\\biomed\\\\app\\\\Http\\\\Controllers\"/*.php)",
+      "Bash(php -r \":*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
