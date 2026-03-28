@@ -36,22 +36,25 @@ jobs:
             git reset --hard HEAD
             git pull origin master
 
-            # ── 2. Composer install ──────────────────
+            # ── 2. Installer ext-gd si manquant ──────
+            sudo docker exec -u root labiotrack-app bash -c "php -m | grep -q gd || (apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev && docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd)"
+
+            # ── 3. Composer install ──────────────────
             sudo docker exec labiotrack-app composer install --no-dev --optimize-autoloader --no-interaction
 
-            # ── 3. Migrations (si nouvelles) ─────────
+            # ── 4. Migrations (si nouvelles) ─────────
             sudo docker exec labiotrack-app php artisan migrate --force
 
-            # ── 4. Cache Laravel ─────────────────────
+            # ── 5. Cache Laravel ─────────────────────
             sudo docker exec labiotrack-app php artisan config:cache
             sudo docker exec labiotrack-app php artisan route:cache
             sudo docker exec labiotrack-app php artisan view:cache
             sudo docker exec labiotrack-app php artisan event:cache
 
-            # ── 5. Permissions ───────────────────────
+            # ── 6. Permissions ───────────────────────
             sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-            # ── 6. Redemarrer le conteneur ───────────
+            # ── 7. Redemarrer le conteneur ───────────
             cd /docker/labiotrack-web
             sudo docker compose restart app
 
