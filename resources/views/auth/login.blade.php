@@ -63,25 +63,6 @@
                         <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
                     </button>
                 </form>
-
-                <div class="demo-creds mt-4">
-                    <div class="fw-bold mb-2 text-danger"><i class="bi bi-info-circle me-1"></i>Comptes de démonstration</div>
-                    <div class="d-flex flex-column gap-1">
-                        <div><span class="badge bg-dark me-1">Superadmin</span> <code>admin@biomed.sn</code></div>
-                        <div><span class="badge bg-dark me-1">Admin</span> <code>reseau@biomed.sn</code></div>
-                        <div><span class="badge" style="background:#1B6B3A;">QHSE</span> <code>qhse@hpd.sn</code></div>
-                        <div><span class="badge bg-info">Admin</span><code>admin@hpd.sn</code></div>
-                        <div><span class="badge" style="background:#1B6B3A;">QHSE</span> <code>qhse@pasteur.sn</code></div>
-                        <div><span class="badge bg-dark me-1">Agent</span> <code>agent@pasteur.sn</code></div>
-                        <div><span class="badge" style="background:#1B6B3A;">QHSE</span> <code>qhse@thiaroye.sn</code></div>
-                        <div><span class="badge" style="background:#1B6B3A;">QHSE</span> <code>qhse@bioanalyse.sn</code></div>
-                        <div><span class="badge bg-warning text-dark">Collecteur</span> <code>collecteur@seas.sn</code></div>
-                        <div><span class="badge bg-secondary">Prestataire</span> <code>prestataire@ute.sn</code></div>
-                        
-                        
-                        <div class="mt-1 opacity-75">Mot de passe : <code>password</code></div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
