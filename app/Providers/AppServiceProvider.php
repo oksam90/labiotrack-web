@@ -38,6 +38,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // ── Forcer HTTPS derrière le reverse proxy (production)
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // ── Pagination Bootstrap 5 (le layout utilise Bootstrap, pas Tailwind)
         Paginator::useBootstrapFive();
 

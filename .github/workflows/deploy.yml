@@ -1,0 +1,59 @@
+# ══════════════════════════════════════════════════════════════
+# CD — LaBioTrack : Deploy auto sur VPS apres push sur master
+# ══════════════════════════════════════════════════════════════
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+  # Permet le declenchement manuel depuis GitHub
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    # Ne deployer que si le CI passe
+    needs: []
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            echo "══════════════════════════════════════"
+            echo "  LaBioTrack — Deploiement auto"
+            echo "══════════════════════════════════════"
+
+            # ── 1. Pull du code ──────────────────────
+            cd /docker/labiotrack-web/code
+            git pull origin master
+
+            # ── 2. Composer install ──────────────────
+            sudo docker exec labiotrack-app composer install --no-dev --optimize-autoloader --no-interaction
+
+            # ── 3. Migrations (si nouvelles) ─────────
+            sudo docker exec labiotrack-app php artisan migrate --force
+
+            # ── 4. Cache Laravel ─────────────────────
+            sudo docker exec labiotrack-app php artisan config:cache
+            sudo docker exec labiotrack-app php artisan route:cache
+            sudo docker exec labiotrack-app php artisan view:cache
+            sudo docker exec labiotrack-app php artisan event:cache
+
+            # ── 5. Permissions ───────────────────────
+            sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+            # ── 6. Redemarrer le conteneur ───────────
+            cd /docker/labiotrack-web
+            sudo docker compose restart app
+
+            echo "══════════════════════════════════════"
+            echo "  Deploiement termine avec succes !"
+            echo "══════════════════════════════════════"

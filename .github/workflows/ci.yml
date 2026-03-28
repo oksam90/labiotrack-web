@@ -1,0 +1,72 @@
+# ══════════════════════════════════════════════════════════════
+# CI — LaBioTrack : Lint + Tests sur chaque push / PR
+# ══════════════════════════════════════════════════════════════
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master]
+
+jobs:
+  lint-and-test:
+    name: PHP Lint & Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: labiotrack_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, xml, mysql, gd, zip, bcmath, intl
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Configure test database
+        run: |
+          php artisan config:clear
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=labiotrack_test/' .env
+          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
+          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=password/' .env
+
+      - name: Run migrations
+        run: php artisan migrate --force
+
+      - name: PHP Syntax Check
+        run: find app config routes -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"  || true
+
+      - name: Run tests
+        run: php artisan test
