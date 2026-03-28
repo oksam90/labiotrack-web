@@ -33,6 +33,7 @@ jobs:
 
             # ── 1. Pull du code ──────────────────────
             cd /docker/labiotrack-web/code
+            git reset --hard HEAD
             git pull origin master
 
             # ── 2. Composer install ──────────────────
