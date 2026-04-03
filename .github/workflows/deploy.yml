@@ -31,12 +31,13 @@ jobs:
             echo "  LaBioTrack — Deploiement auto"
             echo "══════════════════════════════════════"
 
-            # ── 1. Fix permissions + Pull du code ────
+            # ── 1. Fix permissions host + Pull du code ────
             cd /docker/labiotrack-web/code
-            git checkout -- storage bootstrap/cache
+            sudo docker exec -u root labiotrack-app chown -R 1000:1000 /var/www/html/storage /var/www/html/bootstrap/cache
+            git reset --hard HEAD
             git pull origin master
 
-            # ── 2. Permissions (avant composer pour eviter erreurs) ──
+            # ── 2. Permissions www-data (avant composer pour eviter erreurs) ──
             sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
             sudo docker exec -u root labiotrack-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
