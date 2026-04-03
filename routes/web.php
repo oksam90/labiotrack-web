@@ -87,7 +87,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::prefix('rapports')->name('rapports.')->group(function () {
         Route::get('/',                   [RapportController::class, 'index'])->name('index');
         Route::post('/generer',           [RapportController::class, 'generer'])->name('generer');
-        Route::get('/analyse-financiere', [RapportController::class, 'analyseFinanciere'])->name('financier');
+        Route::get('/analyse-financiere', [RapportController::class, 'analyseFinanciere'])->name('financier')->middleware('role:superadmin,qhse,prestataire');
         Route::get('/{id}/pdf',           [RapportController::class, 'pdf'])->name('pdf');
     });
 
@@ -103,6 +103,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('/{id}/edit',       [AdminController::class, 'edit'])->name('edit');
         Route::put('/{id}',            [AdminController::class, 'update'])->name('update');
         Route::delete('/{id}',         [AdminController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle',    [AdminController::class, 'toggleEtablissement'])->name('toggle');
 
         Route::prefix('utilisateurs')->name('utilisateurs.')->group(function () {
             Route::get('/',           [AdminController::class, 'utilisateurs'])->name('index');
@@ -118,10 +119,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/services',        [AdminController::class, 'storeService'])->name('services.store');
         Route::put('/services/{id}',    [AdminController::class, 'updateService'])->name('services.update');
         Route::delete('/services/{id}', [AdminController::class, 'destroyService'])->name('services.destroy');
+        Route::post('/services/{id}/toggle', [AdminController::class, 'toggleService'])->name('services.toggle');
 
         Route::get('/contenants',       [AdminController::class, 'contenants'])->name('contenants');
         Route::post('/contenants',      [AdminController::class, 'storeContenant'])->name('contenants.store');
         Route::put('/contenants/{id}',  [AdminController::class, 'updateContenant'])->name('contenants.update');
+        Route::delete('/contenants/{id}', [AdminController::class, 'destroyContenant'])->name('contenants.destroy');
     });
 
     // ── SUPERADMIN — Vue réseau global ──────────────────────────────────────

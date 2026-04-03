@@ -30,22 +30,22 @@
         <table class="table mb-0">
             <thead><tr><th>Structure</th><th>Type</th><th class="text-end">Poids (kg)</th><th class="text-end">Coût estimé</th><th>Score conformité</th></tr></thead>
             <tbody>
-                @php $maxPoids = $donnees->max('poids') ?: 1; @endphp
-                @foreach($donnees as $d)
+                @php $maxPoids = $etabs->max('poids') ?: 1; @endphp
+                @foreach($etabs as $e)
                 <tr>
-                    <td class="fw-semibold">{{ $d['etab']->nom }}</td>
-                    <td><span class="badge bg-light text-dark border">{{ ucfirst($d['etab']->type) }}</span></td>
+                    <td class="fw-semibold">{{ $e->nom }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ ucfirst($e->type) }}</span></td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
                             <div class="progress flex-fill" style="height:6px;max-width:100px;">
-                                <div class="progress-bar bg-success" style="width:{{ $maxPoids > 0 ? ($d['poids']/$maxPoids)*100 : 0 }}%"></div>
+                                <div class="progress-bar bg-success" style="width:{{ $maxPoids > 0 ? ($e->poids/$maxPoids)*100 : 0 }}%"></div>
                             </div>
-                            {{ number_format($d['poids'],1) }} kg
+                            {{ number_format($e->poids,1) }} kg
                         </div>
                     </td>
-                    <td class="text-end fw-bold text-warning">{{ number_format($d['cout'],0,',',' ') }} F</td>
+                    <td class="text-end fw-bold text-warning">{{ number_format($e->cout,0,',',' ') }} F</td>
                     <td>
-                        @php $sc = round($d['score']); @endphp
+                        @php $sc = round($e->score); @endphp
                         <div class="d-flex align-items-center gap-2">
                             <div class="progress flex-fill" style="height:8px;">
                                 <div class="progress-bar {{ $sc>=80?'bg-success':($sc>=60?'bg-warning':'bg-danger') }}" style="width:{{ $sc }}%"></div>
@@ -58,13 +58,14 @@
             </tbody>
         </table>
     </div>
+    <div class="card-footer">{{ $etabs->links() }}</div>
 </div>
 @endsection
 @push('scripts')
 <script>
-const labels = @json($donnees->pluck('etab')->pluck('nom'));
-const poids  = @json($donnees->pluck('poids'));
-const scores = @json($donnees->map(fn($d)=>round($d['score'])));
+const labels = @json($etabs->pluck('nom'));
+const poids  = @json($etabs->pluck('poids'));
+const scores = @json($etabs->pluck('score')->map(fn($s) => round($s)));
 const colors = ['#1B6B3A','#2E8B57','#D4A017','#2980B9','#8e44ad','#E67E22'];
 
 new Chart(document.getElementById('chartPoids'),{

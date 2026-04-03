@@ -242,15 +242,22 @@ new Chart(document.getElementById('chartEvolution'), {
     options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true, grid:{color:'#f0f0f0'}}, x:{grid:{display:false}}} }
 });
 
-// Répartition contenants
+// Répartition contenants (couleurs selon type de déchet)
 const cont = @json($repartitionContenants);
+const couleurMap = {
+    'jaune':       '#F1C40F',
+    'rouge':       '#E74C3C',
+    'noir':        '#2C3E50',
+    'blanche':     '#BDC3C7',
+    'transparente':'#85C1E9'
+};
 new Chart(document.getElementById('chartContenants'), {
     type: 'doughnut',
     data: {
         labels: cont.map(c => c.nom),
         datasets: [{
             data: cont.map(c => c.total),
-            backgroundColor: ['#1B6B3A','#2E8B57','#D4A017','#E67E22','#2980B9','#8e44ad','#7f8c8d'],
+            backgroundColor: cont.map(c => couleurMap[c.couleur_sac] || '#7f8c8d'),
             borderWidth: 2,
             borderColor: '#fff',
         }]

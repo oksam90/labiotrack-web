@@ -232,9 +232,11 @@
         <a href="{{ route('rapports.index') }}" class="sidebar-link {{ request()->is('rapports*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph"></i> Rapports
         </a>
-        <a href="{{ route('rapports.financier') }}" class="sidebar-link">
+        @if(in_array(Auth::user()->role, ['superadmin','qhse','prestataire']))
+        <a href="{{ route('rapports.financier') }}" class="sidebar-link {{ request()->is('rapports/analyse-financiere*') ? 'active' : '' }}">
             <i class="bi bi-currency-dollar"></i> Analyse financière
         </a>
+        @endif
         @endif
 
         <div class="sidebar-section mt-2">Alertes</div>

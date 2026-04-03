@@ -15,10 +15,14 @@
 <td><span class="role-badge role-{{ $u->role }}">{{ ucfirst($u->role) }}</span></td>
 <td><small>{{ $u->etablissement_nom ?? '—' }}</small></td>
 <td>@if($u->actif)<span class="badge bg-success">Actif</span>@else<span class="badge bg-secondary">Inactif</span>@endif</td>
-<td>
-<a href="{{ route('admin.utilisateurs.edit', $u->id) }}" class="btn btn-sm btn-outline-secondary py-0"><i class="bi bi-pencil"></i></a>
+<td class="d-flex gap-1">
+<a href="{{ route('admin.utilisateurs.edit', $u->id) }}" class="btn btn-sm btn-outline-secondary py-0" title="Modifier"><i class="bi bi-pencil"></i></a>
 <form method="POST" action="{{ route('admin.utilisateurs.toggle', $u->id) }}" class="d-inline">@csrf
-<button type="submit" class="btn btn-sm btn-outline-warning py-0" title="{{ $u->actif ? 'Désactiver' : 'Activer' }}"><i class="bi bi-toggle-on"></i></button></form>
+<button type="submit" class="btn btn-sm {{ $u->actif ? 'btn-outline-warning' : 'btn-outline-success' }} py-0" title="{{ $u->actif ? 'Désactiver' : 'Activer' }}"><i class="bi {{ $u->actif ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i></button></form>
+@if($u->id !== auth()->id())
+<form method="POST" action="{{ route('admin.utilisateurs.destroy', $u->id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">@csrf @method('DELETE')
+<button type="submit" class="btn btn-sm btn-outline-danger py-0" title="Supprimer"><i class="bi bi-trash"></i></button></form>
+@endif
 </td>
 </tr>
 @endforeach

@@ -153,13 +153,14 @@ class DashboardController extends Controller
             ->groupBy('services.id', 'services.nom')
             ->orderByDesc('poids_total')->get();
 
-        // Répartition contenants
+        // Répartition contenants (avec couleur du type de déchet)
         $repartitionContenants = DB::table('declarations')
             ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-            ->select('type_contenants.nom', DB::raw('SUM(nombre_contenants) as total'))
+            ->join('type_dechets', 'type_contenants.type_dechet_id', '=', 'type_dechets.id')
+            ->select('type_contenants.nom', 'type_dechets.couleur_sac', DB::raw('SUM(nombre_contenants) as total'))
             ->where('declarations.etablissement_id', $etabId)
             ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
-            ->groupBy('type_contenants.id', 'type_contenants.nom')->get();
+            ->groupBy('type_contenants.id', 'type_contenants.nom', 'type_dechets.couleur_sac')->get();
 
         // Dernières activités
         $derniereActivites = DB::table('declarations')

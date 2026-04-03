@@ -9,8 +9,9 @@
 <div class="row g-3">
 <div class="col-md-6"><label class="form-label">Prénom *</label><input type="text" name="prenom" class="form-control" value="{{ $user->prenom ?? old("prenom") }}" required></div>
 <div class="col-md-6"><label class="form-label">Nom *</label><input type="text" name="nom" class="form-control" value="{{ $user->nom ?? old("nom") }}" required></div>
-<div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ $user->email ?? old("email") }}"></div>
-<div class="col-md-6"><label class="form-label">Mot de passe {{ $user ? "(laisser vide)" : "*" }}</label><input type="password" name="password" class="form-control" minlength="8"></div>
+<div class="col-md-6"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" value="{{ $user->email ?? old("email") }}" required></div>
+<div class="col-md-6"><label class="form-label">Mot de passe {{ $user ? "(laisser vide)" : "*" }}</label><input type="password" name="password" class="form-control" minlength="8" {{ $user ? "" : "required" }}></div>
+<div class="col-md-6"><label class="form-label">Confirmer le mot de passe {{ $user ? "" : "*" }}</label><input type="password" name="password_confirmation" class="form-control" minlength="8" {{ $user ? "" : "required" }}></div>
 <div class="col-md-6"><label class="form-label">Rôle *</label>
 <select name="role" class="form-select" required>
 @foreach(["superadmin","admin","qhse","agent","collecteur","prestataire"] as $r)
@@ -26,6 +27,6 @@
 </div>
 <div class="d-flex gap-2 mt-4">
 <button type="submit" class="btn btn-primary">Enregistrer</button>
-<a href="{{ route("admin.utilisateurs") }}" class="btn btn-outline-secondary">Annuler</a>
+<a href="{{ route("admin.utilisateurs.index") }}" class="btn btn-outline-secondary">Annuler</a>
 </div></form></div></div></div></div>
 @endsection

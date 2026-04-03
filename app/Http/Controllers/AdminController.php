@@ -76,6 +76,23 @@ class AdminController extends Controller
         return redirect()->route('admin.index')->with('success', 'Établissement supprimé.');
     }
 
+    public function toggleEtablissement($id)
+    {
+        // Seul le superadmin peut activer/désactiver un établissement
+        abort_if(! Auth::user()->isSuperAdmin(), 403, 'Action réservée au superadmin.');
+
+        $etablissement = DB::table('etablissements')->find($id);
+        abort_if(! $etablissement, 404, 'Établissement introuvable.');
+
+        DB::table('etablissements')->where('id', $id)->update([
+            'actif'      => $etablissement->actif ? 0 : 1,
+            'updated_at' => now(),
+        ]);
+
+        $statut = $etablissement->actif ? 'désactivé' : 'activé';
+        return back()->with('success', "Établissement {$statut} avec succès.");
+    }
+
     // ── Utilisateurs ────────────────────────────────────────────────────────
 
     public function utilisateurs()
@@ -110,13 +127,19 @@ class AdminController extends Controller
             'email'   => 'required|email|unique:users,email',
             'password'=> 'required|min:8|confirmed',
             'role'    => 'required|in:superadmin,admin,qhse,agent,collecteur,prestataire',
+        ], [
+            'password.required'  => 'Le mot de passe est obligatoire.',
+            'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'email.unique'       => 'Cet email est déjà utilisé par un autre compte.',
         ]);
 
         $user = Auth::user();
 
         // Admin local : force son propre établissement pour les rôles locaux
-        $etabId = $request->etablissement_id;
-        if (! $user->isSuperAdmin() && ! in_array($request->role, ['collecteur','prestataire'])) {
+        // Admin réseau (sans établissement) et superadmin peuvent choisir librement
+        $etabId = $request->etablissement_id ?: null;
+        if ($user->etablissement_id && ! in_array($request->role, ['collecteur','prestataire'])) {
             $etabId = $user->etablissement_id;
         }
 
@@ -145,15 +168,27 @@ class AdminController extends Controller
 
     public function updateUser(Request $request, $id)
     {
-        $request->validate([
+        $rules = [
             'nom'    => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
+            'email'  => 'required|email|unique:users,email,'.$id,
             'role'   => 'required|in:superadmin,admin,qhse,agent,collecteur,prestataire',
-        ]);
+        ];
 
-        $data = $request->only(['nom','prenom','role','etablissement_id','telephone']);
+        $messages = [];
+
         if ($request->filled('password')) {
-            $request->validate(['password' => 'min:8|confirmed']);
+            $rules['password']              = 'min:8|confirmed';
+            $messages['password.min']       = 'Le mot de passe doit contenir au moins 8 caractères.';
+            $messages['password.confirmed'] = 'La confirmation du mot de passe ne correspond pas.';
+        }
+
+        $request->validate($rules, $messages);
+
+        $data = $request->only(['nom','prenom','email','role','etablissement_id','telephone']);
+        $data['etablissement_id'] = $data['etablissement_id'] ?: null;
+        $data['telephone']        = $data['telephone'] ?: null;
+        if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
         $data['updated_at'] = now();
@@ -255,6 +290,20 @@ class AdminController extends Controller
         return back()->with('success', 'Service supprimé.');
     }
 
+    public function toggleService($id)
+    {
+        $service = DB::table('services')->find($id);
+        abort_if(! $service, 404, 'Service introuvable.');
+
+        DB::table('services')->where('id', $id)->update([
+            'actif'      => $service->actif ? 0 : 1,
+            'updated_at' => now(),
+        ]);
+
+        $statut = $service->actif ? 'désactivé' : 'activé';
+        return back()->with('success', "Service {$statut} avec succès.");
+    }
+
     // ── Contenants ───────────────────────────────────────────────────────────
 
     public function contenants()
@@ -299,6 +348,17 @@ class AdminController extends Controller
             ['updated_at' => now()]
         ));
         return back()->with('success', 'Contenant mis à jour.');
+    }
+
+    public function destroyContenant($id)
+    {
+        // Vérifier qu'aucune déclaration n'utilise ce contenant
+        $count = DB::table('declarations')->where('type_contenant_id', $id)->count();
+        if ($count > 0) {
+            return back()->with('error', "Impossible : {$count} déclaration(s) utilisent ce contenant.");
+        }
+        DB::table('type_contenants')->where('id', $id)->delete();
+        return back()->with('success', 'Contenant supprimé avec succès.');
     }
 
     // ── Activités temps réel ─────────────────────────────────────────────────
