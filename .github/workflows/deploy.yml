@@ -31,8 +31,9 @@ jobs:
             echo "  LaBioTrack — Deploiement auto"
             echo "══════════════════════════════════════"
 
-            # ── 1. Pull du code ──────────────────────
+            # ── 1. Fix permissions + Pull du code ────
             cd /docker/labiotrack-web/code
+            sudo chown -R $(whoami):$(whoami) .
             git reset --hard HEAD
             git pull origin master
 
