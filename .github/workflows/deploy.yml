@@ -33,8 +33,7 @@ jobs:
 
             # ── 1. Fix permissions + Pull du code ────
             cd /docker/labiotrack-web/code
-            sudo chown -R $(whoami):$(whoami) .
-            git reset --hard HEAD
+            git checkout -- storage bootstrap/cache
             git pull origin master
 
             # ── 2. Permissions (avant composer pour eviter erreurs) ──
