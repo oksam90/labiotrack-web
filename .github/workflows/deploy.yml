@@ -38,7 +38,7 @@ jobs:
             git reset --soft origin/master
 
             # ── 2. Permissions www-data (avant composer pour eviter erreurs) ──
-            sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+            sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/vendor
             sudo docker exec -u root labiotrack-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
             # ── 3. Installer ext-gd si manquant ──────
