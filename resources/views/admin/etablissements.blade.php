@@ -6,11 +6,12 @@
     <a href="{{ route('admin.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>Ajouter</a>
 </div>
 <div class="card"><div class="table-responsive"><table class="table mb-0">
-<thead><tr><th>Nom</th><th>Type</th><th>Ville</th><th>QHSE</th><th>Lits</th><th>Statut</th><th></th></tr></thead>
+<thead><tr><th>Nom</th><th>Réseau</th><th>Type</th><th>Ville</th><th>QHSE</th><th>Lits</th><th>Statut</th><th></th></tr></thead>
 <tbody>
 @foreach($etablissements as $e)
 <tr>
 <td><strong>{{ $e->nom }}</strong></td>
+<td><small class="text-muted">{{ $e->reseau_nom ?? '—' }}</small></td>
 <td><span class="badge bg-info">{{ ucfirst($e->type) }}</span></td>
 <td>{{ $e->ville }}</td>
 <td>{{ $e->responsable_qhse }}</td>

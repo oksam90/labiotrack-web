@@ -6,13 +6,14 @@
     <a href="{{ route('admin.utilisateurs.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>Ajouter</a>
 </div>
 <div class="card"><div class="table-responsive"><table class="table mb-0">
-<thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Établissement</th><th>Statut</th><th></th></tr></thead>
+<thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Réseau</th><th>Établissement</th><th>Statut</th><th></th></tr></thead>
 <tbody>
 @foreach($users as $u)
 <tr>
 <td>{{ $u->prenom }} {{ $u->nom }}</td>
 <td><small>{{ $u->email }}</small></td>
-<td><span class="role-badge role-{{ $u->role }}">{{ ucfirst($u->role) }}</span></td>
+<td><span class="role-badge role-{{ $u->role }}">{{ str_replace('_', ' ', ucfirst($u->role)) }}</span></td>
+<td><small class="text-muted">{{ $u->reseau_nom ?? '—' }}</small></td>
 <td><small>{{ $u->etablissement_nom ?? '—' }}</small></td>
 <td>@if($u->actif)<span class="badge bg-success">Actif</span>@else<span class="badge bg-secondary">Inactif</span>@endif</td>
 <td class="d-flex gap-1">

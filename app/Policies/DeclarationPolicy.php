@@ -6,65 +6,56 @@ use App\Models\Declaration;
 use App\Models\User;
 
 /**
- * DeclarationPolicy
+ * DeclarationPolicy — matrice d'accès LaBioTrack.
  *
- * Matrice d'accès :
- * ┌──────────────┬────────┬──────┬──────────┬────────┬───────────┬────────────┐
- * │ Action       │ super  │admin │  qhse    │ agent  │collecteur │prestataire │
- * ├──────────────┼────────┼──────┼──────────┼────────┼───────────┼────────────┤
- * │ viewAny      │   ✓    │  ✓   │    ✓     │   ✓    │     ✓     │     ✓      │
- * │ view         │   ✓    │  ✓   │    ✓     │ sienne │     ✓     │     ✓      │
- * │ create       │   ✓    │  ✓   │    ✓     │   ✓    │           │            │
- * │ update       │   ✓    │  ✓   │    ✓     │ sienne │           │            │
- * │ delete       │   ✓    │  ✓   │    ✓     │        │           │            │
- * └──────────────┴────────┴──────┴──────────┴────────┴───────────┴────────────┘
+ * superadmin / collecteur / prestataire → toutes déclarations
+ * admin_reseau / admin                  → déclarations de leur réseau
+ * qhse                                  → déclarations de leur établissement
+ * agent                                 → ses propres déclarations
  */
 class DeclarationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return true; // Tous les rôles authentifiés peuvent lister
+        return true; // Tous authentifiés ; le scope filtre les résultats
     }
 
     public function view(User $user, Declaration $declaration): bool
     {
-        // Admin/superadmin/collecteur/prestataire → accès global
         if ($user->isGlobal()) return true;
-
-        // qhse → son établissement uniquement
+        if ($user->isReseauScoped()) {
+            return $user->canAccessTenant($declaration->etablissement_id);
+        }
         if ($user->isQhse()) {
             return $user->etablissement_id === $declaration->etablissement_id;
         }
-
-        // agent → uniquement ses propres déclarations dans son établissement
         if ($user->isAgent()) {
             return $user->etablissement_id === $declaration->etablissement_id
                 && $user->id === $declaration->user_id;
         }
-
         return false;
     }
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['superadmin','admin','qhse','agent']);
+        return in_array($user->role, ['superadmin','admin','admin_reseau','qhse','agent']);
     }
 
     public function update(User $user, Declaration $declaration): bool
     {
         if ($declaration->statut !== 'en_stock') return false;
 
-        if ($user->isAdminOrSuper()) return true;
-
+        if ($user->isSuperAdmin()) return true;
+        if ($user->isReseauScoped()) {
+            return $user->canAccessTenant($declaration->etablissement_id);
+        }
         if ($user->isQhse()) {
             return $user->etablissement_id === $declaration->etablissement_id;
         }
-
         if ($user->isAgent()) {
             return $user->etablissement_id === $declaration->etablissement_id
                 && $user->id === $declaration->user_id;
         }
-
         return false;
     }
 
@@ -72,12 +63,13 @@ class DeclarationPolicy
     {
         if ($declaration->statut !== 'en_stock') return false;
 
-        if ($user->isAdminOrSuper()) return true;
-
+        if ($user->isSuperAdmin()) return true;
+        if ($user->isReseauScoped()) {
+            return $user->canAccessTenant($declaration->etablissement_id);
+        }
         if ($user->isQhse()) {
             return $user->etablissement_id === $declaration->etablissement_id;
         }
-
         return false;
     }
 }

@@ -11,7 +11,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'etablissement_id','nom','prenom','email','password',
+        'etablissement_id','reseau_id','nom','prenom','email','password',
         'role','telephone','actif','last_login_at','last_login_ip',
     ];
 
@@ -27,6 +27,11 @@ class User extends Authenticatable
     public function etablissement()
     {
         return $this->belongsTo(Etablissement::class);
+    }
+
+    public function reseau()
+    {
+        return $this->belongsTo(Reseau::class);
     }
 
     public function declarations()
@@ -46,32 +51,52 @@ class User extends Authenticatable
     }
 
     // ── Vérifications de rôle ───────────────────────────────────
-    public function isSuperAdmin(): bool { return $this->role === 'superadmin'; }
-    public function isAdmin()     : bool { return in_array($this->role, ['admin', 'superadmin']); }
-    public function isQhse()      : bool { return $this->role === 'qhse'; }
-    public function isAgent()     : bool { return $this->role === 'agent'; }
-    public function isCollecteur(): bool { return $this->role === 'collecteur'; }
-    public function isPrestataire():bool { return $this->role === 'prestataire'; }
+    public function isSuperAdmin()  : bool { return $this->role === 'superadmin'; }
+    public function isAdminReseau() : bool { return $this->role === 'admin_reseau'; }
+    public function isAdmin()       : bool { return in_array($this->role, ['admin', 'superadmin']); }
+    public function isQhse()        : bool { return $this->role === 'qhse'; }
+    public function isAgent()       : bool { return $this->role === 'agent'; }
+    public function isCollecteur()  : bool { return $this->role === 'collecteur'; }
+    public function isPrestataire() : bool { return $this->role === 'prestataire'; }
 
     /**
-     * Retourne true si l'utilisateur a une vue GLOBALE (toutes structures).
-     *
-     * Selon les specs : admin, superadmin, collecteur et prestataire
-     * sont "sans structure fixe" (etablissement_id = NULL en base) et
-     * opèrent sur l'ensemble du réseau.
+     * Vue GLOBALE = tous réseaux. Réservé au superadmin et aux rôles
+     * inter-réseaux (collecteur, prestataire) qui opèrent sur l'ensemble
+     * des structures sans rattachement réseau.
      */
     public function isGlobal(): bool
     {
-        return in_array($this->role, ['admin', 'superadmin', 'collecteur', 'prestataire']);
+        return in_array($this->role, ['superadmin', 'collecteur', 'prestataire']);
     }
 
     /**
-     * Retourne true si l'utilisateur est admin/superadmin
-     * (peut accéder aux sections d'administration).
+     * Vue limitée à UN RÉSEAU (et ses établissements).
+     * L'AdminRéseau et l'admin local sont rattachés à un réseau via
+     * leur etablissement_id ou directement via reseau_id.
+     */
+    public function isReseauScoped(): bool
+    {
+        return in_array($this->role, ['admin_reseau', 'admin']);
+    }
+
+    /**
+     * Peut accéder aux sections d'administration (admin local, admin réseau,
+     * superadmin).
      */
     public function isAdminOrSuper(): bool
     {
-        return in_array($this->role, ['admin', 'superadmin']);
+        return in_array($this->role, ['admin', 'admin_reseau', 'superadmin']);
+    }
+
+    /**
+     * Récupère l'ID du réseau de l'utilisateur (via reseau_id direct ou
+     * via etablissement.reseau_id). Retourne null si superadmin ou
+     * utilisateur sans rattachement réseau.
+     */
+    public function getReseauIdAttribute($value)
+    {
+        if ($value !== null) return $value;
+        return $this->etablissement?->reseau_id;
     }
 
     /**
@@ -79,21 +104,40 @@ class User extends Authenticatable
      */
     public function canAccessTenant(int $etablissementId): bool
     {
-        if ($this->isGlobal()) return true;
+        if ($this->isSuperAdmin()) return true;
+
+        if ($this->isReseauScoped()) {
+            $etab = Etablissement::find($etablissementId);
+            return $etab && $etab->reseau_id === $this->reseau_id;
+        }
+
+        if (in_array($this->role, ['collecteur', 'prestataire'])) return true;
+
         return $this->etablissement_id === $etablissementId;
     }
 
     /**
-     * Applique un filtre etablissement_id sur une query DB::table().
-     * Les utilisateurs globaux (admin, superadmin, collecteur, prestataire)
-     * → aucun filtre. Les autres → filtrés par leur établissement.
+     * Applique un filtre sur une query DB::table() en respectant le
+     * périmètre du rôle.
+     *  - superadmin / collecteur / prestataire → aucun filtre (vue globale)
+     *  - admin_reseau / admin → filtré par les établissements de leur réseau
+     *  - qhse / agent → filtré par leur établissement
      *
      * @param \Illuminate\Database\Query\Builder $query
-     * @param string $col Colonne à filtrer
+     * @param string $col Colonne établissement à filtrer
      */
     public function filtreEtab($query, string $col = 'etablissement_id')
     {
         if ($this->isGlobal()) return $query;
+
+        if ($this->isReseauScoped() && $this->reseau_id) {
+            return $query->whereIn($col, function ($q) {
+                $q->select('id')
+                  ->from('etablissements')
+                  ->where('reseau_id', $this->reseau_id);
+            });
+        }
+
         return $query->where($col, $this->etablissement_id);
     }
 }

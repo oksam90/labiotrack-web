@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Scopes\TenantScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
@@ -9,11 +10,20 @@ class Etablissement extends Model
 {
     use HasFactory;
 
+    /**
+     * Applique le TenantScope aussi sur Etablissement pour que
+     * l'AdminRéseau ne voie que les établissements de SON réseau.
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new TenantScope());
+    }
+
     protected $table = 'etablissements';
 
     // ✅ FIX #3 — slug et parametres manquaient dans $fillable
     protected $fillable = [
-        'nom','type','adresse','ville','telephone',
+        'reseau_id','nom','type','adresse','ville','telephone',
         'email','responsable_qhse','nombre_lits','actif','logo',
         'slug','parametres',
     ];
@@ -24,6 +34,7 @@ class Etablissement extends Model
     ];
 
     // ── Relations ──────────────────────────────────────────────
+    public function reseau()       { return $this->belongsTo(Reseau::class); }
     public function users()        { return $this->hasMany(User::class); }
     public function services()     { return $this->hasMany(Service::class); }
     public function declarations() { return $this->hasMany(Declaration::class); }

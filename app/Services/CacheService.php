@@ -37,9 +37,9 @@ class CacheService
         return "rapport:" . ($etabId ?? 'global') . ":{$debut}:{$fin}";
     }
 
-    public static function superadminKpisKey(string $mois): string
+    public static function superadminKpisKey(string $mois, ?int $reseauId = null): string
     {
-        return "superadmin:kpis:{$mois}";
+        return "superadmin:kpis:" . ($reseauId ?? 'global') . ":{$mois}";
     }
 
     public static function superadminEtabKey(int $etabId, string $mois): string

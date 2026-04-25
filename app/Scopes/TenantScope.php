@@ -8,16 +8,23 @@ use Illuminate\Database\Eloquent\Scope;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * TenantScope — applique automatiquement le filtre etablissement_id
- * sur toutes les queries des modèles multi-tenant.
+ * TenantScope — applique automatiquement le filtre etablissement_id /
+ * reseau_id sur toutes les queries des modèles tenant-aware.
  *
- * Utilisateurs GLOBAUX (sans filtre structure) :
- *   - superadmin, admin  → voient tout, administrent
- *   - collecteur         → intervient sur toutes les structures
- *   - prestataire        → traite les déchets de toutes les structures
+ * Vue GLOBALE (aucun filtre) :
+ *   - superadmin     → voit tous les réseaux
+ *   - collecteur     → intervient sur toutes les structures
+ *   - prestataire    → traite les déchets de toutes les structures
  *
- * Utilisateurs LOCAUX (filtrés par leur structure) :
- *   - qhse, agent        → limités à leur établissement
+ * Vue RÉSEAU (filtré par reseau_id) :
+ *   - admin_reseau   → son réseau uniquement
+ *   - admin          → son réseau uniquement (admin local promu à la maille réseau)
+ *
+ * Vue ÉTABLISSEMENT :
+ *   - qhse, agent    → limités à leur établissement
+ *
+ * Override : si `admin_tenant_id` est en session ET autorisé,
+ * filtre sur cet établissement précis (zoom).
  */
 class TenantScope implements Scope
 {
@@ -25,14 +32,43 @@ class TenantScope implements Scope
     {
         if (! Auth::check()) return;
 
-        $user = Auth::user();
+        $user  = Auth::user();
+        $table = $model->getTable();
 
-        // Rôles globaux → pas de filtre établissement
+        // Override par session "zoom" sur un établissement précis
+        $sessionTenant = session('admin_tenant_id');
+        if ($sessionTenant && $user->canAccessTenant((int) $sessionTenant)) {
+            if ($table === 'etablissements') {
+                $builder->where("$table.id", $sessionTenant);
+            } else {
+                $builder->where("$table.etablissement_id", $sessionTenant);
+            }
+            return;
+        }
+
+        // Vue globale → pas de filtre
         if ($user->isGlobal()) return;
 
-        // Rôles locaux : filtrer par leur établissement
+        // Vue réseau (admin / admin_reseau)
+        if ($user->isReseauScoped() && $user->reseau_id) {
+            if ($table === 'etablissements') {
+                $builder->where("$table.reseau_id", $user->reseau_id);
+            } else {
+                $builder->whereIn("$table.etablissement_id", function ($q) use ($user) {
+                    $q->select('id')->from('etablissements')
+                      ->where('reseau_id', $user->reseau_id);
+                });
+            }
+            return;
+        }
+
+        // Vue locale (qhse, agent) → leur établissement
         if ($user->etablissement_id) {
-            $builder->where($model->getTable() . '.etablissement_id', $user->etablissement_id);
+            if ($table === 'etablissements') {
+                $builder->where("$table.id", $user->etablissement_id);
+            } else {
+                $builder->where("$table.etablissement_id", $user->etablissement_id);
+            }
         }
     }
 }

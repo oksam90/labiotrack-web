@@ -10,17 +10,53 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
+    /**
+     * Helper : restreint un query DB::table() aux établissements du
+     * réseau de l'utilisateur connecté. SUPERADMIN/global → pas de filtre.
+     *
+     * @param \Illuminate\Database\Query\Builder $query
+     * @param string $col Colonne id ou etablissement_id
+     */
+    private function scopeReseau($query, string $col = 'id')
+    {
+        $user = Auth::user();
+        if ($user->isSuperAdmin()) return $query;
+
+        if ($user->isReseauScoped() && $user->reseau_id) {
+            if ($col === 'id') {
+                // Sur la table etablissements directement
+                return $query->where('reseau_id', $user->reseau_id);
+            }
+            // Sur autre table → sous-requête sur établissements du réseau
+            return $query->whereIn($col, function ($q) use ($user) {
+                $q->select('id')->from('etablissements')->where('reseau_id', $user->reseau_id);
+            });
+        }
+        return $query;
+    }
+
     // ── Établissements ──────────────────────────────────────────────────────
 
     public function index()
     {
-        $etablissements = DB::table('etablissements')->orderBy('nom')->paginate(10);
+        $query = DB::table('etablissements')
+            ->leftJoin('reseaux', 'etablissements.reseau_id', '=', 'reseaux.id')
+            ->select('etablissements.*', 'reseaux.nom as reseau_nom');
+
+        // Filtrer par réseau pour admin_reseau / admin
+        $this->scopeReseau($query, 'etablissements.id');
+
+        $etablissements = $query->orderBy('etablissements.nom')->paginate(10);
         return view('admin.etablissements', compact('etablissements'));
     }
 
     public function create()
     {
-        return view('admin.etablissement_form', ['etablissement' => null]);
+        $reseaux = $this->reseauxAccessibles();
+        return view('admin.etablissement_form', [
+            'etablissement' => null,
+            'reseaux'       => $reseaux,
+        ]);
     }
 
     public function store(Request $request)
@@ -34,11 +70,19 @@ class AdminController extends Controller
             'nombre_lits'      => 'nullable|integer|min:0',
             'email'            => 'nullable|email|unique:etablissements,email',
             'telephone'        => 'nullable|string|max:30',
+            'reseau_id'        => 'nullable|exists:reseaux,id',
         ]);
+
+        $user      = Auth::user();
+        $reseauId  = $request->reseau_id ?: null;
+        // AdminRéseau : forcer son propre réseau
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $reseauId = $user->reseau_id;
+        }
 
         DB::table('etablissements')->insert(array_merge(
             $request->only(['nom','type','adresse','ville','telephone','email','responsable_qhse','nombre_lits']),
-            ['actif' => 1, 'created_at' => now(), 'updated_at' => now()]
+            ['reseau_id' => $reseauId, 'actif' => 1, 'created_at' => now(), 'updated_at' => now()]
         ));
 
         return redirect()->route('admin.index')->with('success', 'Établissement créé avec succès.');
@@ -48,26 +92,47 @@ class AdminController extends Controller
     {
         $etablissement = DB::table('etablissements')->find($id);
         abort_if(! $etablissement, 404, 'Établissement introuvable.');
-        return view('admin.etablissement_form', compact('etablissement'));
+
+        // SECURITY : vérifier accès réseau
+        $user = Auth::user();
+        if (! $user->isSuperAdmin()) {
+            if ($user->isAdminReseau() && $etablissement->reseau_id !== $user->reseau_id) {
+                abort(403, "Cet établissement n'appartient pas à votre réseau.");
+            }
+        }
+
+        $reseaux = $this->reseauxAccessibles();
+        return view('admin.etablissement_form', compact('etablissement', 'reseaux'));
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'nom'     => 'required|string|max:255',
-            'type'    => 'required|in:clinique,hopital,cabinet,laboratoire',
-            'adresse' => 'required|string',
+            'nom'       => 'required|string|max:255',
+            'type'      => 'required|in:clinique,hopital,cabinet,laboratoire',
+            'adresse'   => 'required|string',
+            'reseau_id' => 'nullable|exists:reseaux,id',
         ]);
-        DB::table('etablissements')->where('id', $id)->update(array_merge(
-            $request->only(['nom','type','adresse','ville','telephone','email','responsable_qhse','nombre_lits']),
-            ['updated_at' => now()]
-        ));
+
+        $user = Auth::user();
+        $data = $request->only(['nom','type','adresse','ville','telephone','email','responsable_qhse','nombre_lits']);
+
+        // Seul le superadmin peut changer le rattachement réseau
+        if ($user->isSuperAdmin()) {
+            $data['reseau_id'] = $request->reseau_id ?: null;
+        }
+        $data['updated_at'] = now();
+
+        DB::table('etablissements')->where('id', $id)->update($data);
         return redirect()->route('admin.index')->with('success', 'Établissement mis à jour.');
     }
 
     public function destroy($id)
     {
-        // Vérification qu'aucun utilisateur actif n'est rattaché
+        // EtablissementPolicy → suppression réservée superadmin
+        abort_unless(Auth::user()->isSuperAdmin(), 403,
+            "Suppression réservée au superadmin.");
+
         $usersActifs = DB::table('users')->where('etablissement_id', $id)->where('actif', 1)->count();
         if ($usersActifs > 0) {
             return back()->with('error', "Impossible : {$usersActifs} utilisateur(s) actif(s) rattaché(s). Désactivez-les d'abord.");
@@ -93,6 +158,19 @@ class AdminController extends Controller
         return back()->with('success', "Établissement {$statut} avec succès.");
     }
 
+    /**
+     * Liste les réseaux accessibles à l'utilisateur courant (pour les selects).
+     */
+    private function reseauxAccessibles()
+    {
+        $user = Auth::user();
+        $q = DB::table('reseaux')->where('actif', 1)->orderBy('nom');
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $q->where('id', $user->reseau_id);
+        }
+        return $q->get();
+    }
+
     // ── Utilisateurs ────────────────────────────────────────────────────────
 
     public function utilisateurs()
@@ -100,33 +178,60 @@ class AdminController extends Controller
         $user  = Auth::user();
         $query = DB::table('users')
             ->leftJoin('etablissements', 'users.etablissement_id', '=', 'etablissements.id')
-            ->select('users.*', 'etablissements.nom as etablissement_nom')
+            ->leftJoin('reseaux', 'etablissements.reseau_id', '=', 'reseaux.id')
+            ->select('users.*', 'etablissements.nom as etablissement_nom', 'reseaux.nom as reseau_nom')
             ->orderByDesc('users.created_at');
 
-        // Admin local : ne voit que les utilisateurs de son établissement
-        if (! $user->isAdminOrSuper() || $user->etablissement_id) {
+        // SUPERADMIN → tous les utilisateurs
+        // ADMIN_RESEAU → utilisateurs du réseau (via etablissement.reseau_id ou users.reseau_id)
+        // ADMIN local → utilisateurs de son établissement
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $query->where(function ($q) use ($user) {
+                $q->where('users.reseau_id', $user->reseau_id)
+                  ->orWhereIn('users.etablissement_id', function ($sub) use ($user) {
+                      $sub->select('id')->from('etablissements')->where('reseau_id', $user->reseau_id);
+                  });
+            });
+        } elseif (! $user->isSuperAdmin() && $user->etablissement_id) {
             $query->where('users.etablissement_id', $user->etablissement_id);
         }
 
         $users          = $query->paginate(10);
-        $etablissements = DB::table('etablissements')->where('actif', 1)->orderBy('nom')->get();
+        $etablissements = $this->etablissementsAccessibles();
         return view('admin.utilisateurs', compact('users', 'etablissements'));
+    }
+
+    private function etablissementsAccessibles()
+    {
+        $user = Auth::user();
+        $q = DB::table('etablissements')->where('actif', 1)->orderBy('nom');
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $q->where('reseau_id', $user->reseau_id);
+        }
+        return $q->get();
     }
 
     public function createUser()
     {
-        $etablissements = DB::table('etablissements')->where('actif', 1)->orderBy('nom')->get();
-        return view('admin.user_form', ['user' => null, 'etablissements' => $etablissements]);
+        $etablissements = $this->etablissementsAccessibles();
+        $reseaux        = $this->reseauxAccessibles();
+        return view('admin.user_form', [
+            'user'           => null,
+            'etablissements' => $etablissements,
+            'reseaux'        => $reseaux,
+        ]);
     }
 
     public function storeUser(Request $request)
     {
         $request->validate([
-            'nom'     => 'required|string|max:100',
-            'prenom'  => 'required|string|max:100',
-            'email'   => 'required|email|unique:users,email',
-            'password'=> 'required|min:8|confirmed',
-            'role'    => 'required|in:superadmin,admin,qhse,agent,collecteur,prestataire',
+            'nom'      => 'required|string|max:100',
+            'prenom'   => 'required|string|max:100',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
+            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire',
+            'reseau_id'        => 'nullable|exists:reseaux,id',
+            'etablissement_id' => 'nullable|exists:etablissements,id',
         ], [
             'password.required'  => 'Le mot de passe est obligatoire.',
             'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
@@ -136,20 +241,41 @@ class AdminController extends Controller
 
         $user = Auth::user();
 
-        // Admin local : force son propre établissement pour les rôles locaux
-        // Admin réseau (sans établissement) et superadmin peuvent choisir librement
-        $etabId = $request->etablissement_id ?: null;
-        if ($user->etablissement_id && ! in_array($request->role, ['collecteur','prestataire'])) {
+        // SECURITY : seul le superadmin peut créer un AdminRéseau
+        if ($request->role === 'admin_reseau' && ! $user->isSuperAdmin()) {
+            abort(403, "Seul le superadmin peut créer un AdminRéseau.");
+        }
+
+        $etabId   = $request->etablissement_id ?: null;
+        $reseauId = $request->reseau_id ?: null;
+
+        // AdminRéseau créant un user → forcer le rattachement à son réseau
+        if ($user->isAdminReseau()) {
+            $reseauId = $user->reseau_id;
+            // Vérifier que l'établissement choisi appartient à son réseau
+            if ($etabId) {
+                $etab = DB::table('etablissements')->find($etabId);
+                abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
+                    "L'établissement sélectionné n'appartient pas à votre réseau.");
+            }
+        }
+
+        // Admin local : force son établissement pour les rôles locaux
+        if ($user->isAdmin() && ! $user->isSuperAdmin() && ! $user->isAdminReseau()
+            && $user->etablissement_id
+            && ! in_array($request->role, ['collecteur','prestataire','admin_reseau','superadmin'])) {
             $etabId = $user->etablissement_id;
         }
 
         DB::table('users')->insert([
             'etablissement_id' => $etabId,
+            'reseau_id'        => $reseauId,
             'nom'              => $request->nom,
             'prenom'           => $request->prenom,
             'email'            => $request->email,
             'password'         => Hash::make($request->password),
             'role'             => $request->role,
+            'telephone'        => $request->telephone ?: null,
             'actif'            => 1,
             'created_at'       => now(),
             'updated_at'       => now(),
@@ -162,17 +288,32 @@ class AdminController extends Controller
     {
         $user           = DB::table('users')->find($id);
         abort_if(! $user, 404);
-        $etablissements = DB::table('etablissements')->where('actif', 1)->orderBy('nom')->get();
-        return view('admin.user_form', compact('user', 'etablissements'));
+
+        // SECURITY : AdminRéseau ne peut éditer que les utilisateurs de son réseau
+        $current = Auth::user();
+        if ($current->isAdminReseau() && $current->reseau_id) {
+            $allowed = $user->reseau_id === $current->reseau_id;
+            if (! $allowed && $user->etablissement_id) {
+                $etab = DB::table('etablissements')->find($user->etablissement_id);
+                $allowed = $etab && $etab->reseau_id === $current->reseau_id;
+            }
+            abort_unless($allowed, 403, "Cet utilisateur n'appartient pas à votre réseau.");
+        }
+
+        $etablissements = $this->etablissementsAccessibles();
+        $reseaux        = $this->reseauxAccessibles();
+        return view('admin.user_form', compact('user', 'etablissements', 'reseaux'));
     }
 
     public function updateUser(Request $request, $id)
     {
         $rules = [
-            'nom'    => 'required|string|max:100',
-            'prenom' => 'required|string|max:100',
-            'email'  => 'required|email|unique:users,email,'.$id,
-            'role'   => 'required|in:superadmin,admin,qhse,agent,collecteur,prestataire',
+            'nom'      => 'required|string|max:100',
+            'prenom'   => 'required|string|max:100',
+            'email'    => 'required|email|unique:users,email,'.$id,
+            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire',
+            'reseau_id'        => 'nullable|exists:reseaux,id',
+            'etablissement_id' => 'nullable|exists:etablissements,id',
         ];
 
         $messages = [];
@@ -185,8 +326,14 @@ class AdminController extends Controller
 
         $request->validate($rules, $messages);
 
-        $data = $request->only(['nom','prenom','email','role','etablissement_id','telephone']);
+        // SECURITY : seul superadmin peut promouvoir admin_reseau
+        if ($request->role === 'admin_reseau' && ! Auth::user()->isSuperAdmin()) {
+            abort(403, "Seul le superadmin peut désigner un AdminRéseau.");
+        }
+
+        $data = $request->only(['nom','prenom','email','role','etablissement_id','reseau_id','telephone']);
         $data['etablissement_id'] = $data['etablissement_id'] ?: null;
+        $data['reseau_id']        = $data['reseau_id'] ?: null;
         $data['telephone']        = $data['telephone'] ?: null;
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
@@ -222,36 +369,40 @@ class AdminController extends Controller
     {
         $user  = Auth::user();
 
-        // Utilisateur global sans établissement → tous les services avec leur établissement
-        if ($user->isGlobal() && ! $user->etablissement_id) {
-            $services = DB::table('services')
-                ->join('etablissements', 'services.etablissement_id', '=', 'etablissements.id')
-                ->select('services.*', 'etablissements.nom as etablissement_nom')
-                ->orderBy('etablissements.nom')->orderBy('services.nom')
-                ->paginate(10);
-        } else {
-            $etabId   = $user->etablissement_id;
-            $services = DB::table('services')
-                ->where('etablissement_id', $etabId)
-                ->orderBy('nom')->paginate(10);
+        $query = DB::table('services')
+            ->join('etablissements', 'services.etablissement_id', '=', 'etablissements.id')
+            ->select('services.*', 'etablissements.nom as etablissement_nom');
+
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $query->where('etablissements.reseau_id', $user->reseau_id);
+        } elseif (! $user->isSuperAdmin() && ! $user->isGlobal() && $user->etablissement_id) {
+            $query->where('services.etablissement_id', $user->etablissement_id);
         }
 
-        $etablissements = DB::table('etablissements')->where('actif', 1)->orderBy('nom')->get();
+        $services       = $query->orderBy('etablissements.nom')->orderBy('services.nom')->paginate(10);
+        $etablissements = $this->etablissementsAccessibles();
         return view('admin.services', compact('services', 'etablissements'));
     }
 
     public function storeService(Request $request)
     {
         $request->validate([
-            'nom'            => 'required|string|max:255',
+            'nom'              => 'required|string|max:255',
             'etablissement_id' => 'required|exists:etablissements,id',
         ]);
 
         $user   = Auth::user();
         $etabId = $request->etablissement_id;
 
+        // SECURITY : AdminRéseau → vérifier que l'étab appartient à son réseau
+        if ($user->isAdminReseau() && $user->reseau_id) {
+            $etab = DB::table('etablissements')->find($etabId);
+            abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
+                "Cet établissement n'appartient pas à votre réseau.");
+        }
+
         // Admin local : forcer son propre établissement
-        if (! $user->isGlobal() && $user->etablissement_id) {
+        if (! $user->isGlobal() && ! $user->isAdminReseau() && $user->etablissement_id) {
             $etabId = $user->etablissement_id;
         }
 
@@ -281,7 +432,6 @@ class AdminController extends Controller
 
     public function destroyService($id)
     {
-        // Vérifier qu'aucune déclaration n'est liée
         $count = DB::table('declarations')->where('service_id', $id)->count();
         if ($count > 0) {
             return back()->with('error', "Impossible : {$count} déclaration(s) liée(s) à ce service.");
@@ -304,7 +454,8 @@ class AdminController extends Controller
         return back()->with('success', "Service {$statut} avec succès.");
     }
 
-    // ── Contenants ───────────────────────────────────────────────────────────
+    // ── Contenants ─────────────────────────────────────────────────────────
+    // NB : référentiel global, lecture seule pour AdminRéseau (CRUD : superadmin)
 
     public function contenants()
     {
@@ -318,6 +469,10 @@ class AdminController extends Controller
 
     public function storeContenant(Request $request)
     {
+        // Référentiel global : seul superadmin peut créer
+        abort_unless(Auth::user()->isSuperAdmin(), 403,
+            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+
         $request->validate([
             'nom'            => 'required|string|max:255',
             'code'           => 'required|string|max:50|unique:type_contenants,code',
@@ -336,6 +491,9 @@ class AdminController extends Controller
 
     public function updateContenant(Request $request, $id)
     {
+        abort_unless(Auth::user()->isSuperAdmin(), 403,
+            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+
         $request->validate([
             'nom'            => 'required|string|max:255',
             'poids_moyen_kg' => 'required|numeric|min:0.01',
@@ -352,7 +510,9 @@ class AdminController extends Controller
 
     public function destroyContenant($id)
     {
-        // Vérifier qu'aucune déclaration n'utilise ce contenant
+        abort_unless(Auth::user()->isSuperAdmin(), 403,
+            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+
         $count = DB::table('declarations')->where('type_contenant_id', $id)->count();
         if ($count > 0) {
             return back()->with('error', "Impossible : {$count} déclaration(s) utilisent ce contenant.");
@@ -380,9 +540,8 @@ class AdminController extends Controller
     {
         $page    = (int) request('page', 1);
         $perPage = (int) request('per_page', 30);
-        $perPage = min($perPage, 100); // Garde-fou : max 100 par page
+        $perPage = min($perPage, 100);
 
-        // ── Flux d'activités avec pagination LIMIT/OFFSET côté SQL ──
         $source = DB::table('activites_log')->count() > 0
             ? 'activites_log'
             : 'activites_feed';
@@ -397,7 +556,6 @@ class AdminController extends Controller
             ->limit($perPage)
             ->get();
 
-        // ── Stats live : 1 requête agrégée au lieu de 5 ─────────────
         $today = now()->toDateString();
         $statsRaw = DB::selectOne("
             SELECT

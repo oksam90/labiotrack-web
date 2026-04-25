@@ -20,6 +20,21 @@
 <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ $etablissement->email ?? '' }}"></div>
 <div class="col-md-6"><label class="form-label">Responsable QHSE</label><input type="text" name="responsable_qhse" class="form-control" value="{{ $etablissement->responsable_qhse ?? '' }}"></div>
 <div class="col-md-4"><label class="form-label">Nombre de lits</label><input type="number" name="nombre_lits" class="form-control" value="{{ $etablissement->nombre_lits ?? 0 }}"></div>
+@if(isset($reseaux) && $reseaux->count() > 0)
+<div class="col-md-8"><label class="form-label">Réseau de rattachement
+@if(auth()->user()->isAdminReseau()) <small class="text-muted">(votre réseau)</small>@endif
+</label>
+<select name="reseau_id" class="form-select" {{ auth()->user()->isAdminReseau() ? 'disabled' : '' }}>
+<option value="">— Aucun réseau (autonome) —</option>
+@foreach($reseaux as $r)
+<option value="{{ $r->id }}" {{ ($etablissement->reseau_id ?? (auth()->user()->isAdminReseau() ? auth()->user()->reseau_id : null)) == $r->id ? 'selected' : '' }}>{{ $r->nom }}</option>
+@endforeach
+</select>
+@if(auth()->user()->isAdminReseau())
+<input type="hidden" name="reseau_id" value="{{ auth()->user()->reseau_id }}">
+@endif
+</div>
+@endif
 </div>
 <div class="d-flex gap-2 mt-4">
 <button type="submit" class="btn btn-primary">Enregistrer</button>

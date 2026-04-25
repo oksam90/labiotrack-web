@@ -31,7 +31,24 @@
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" secret set VPS_HOST --repo oksam90/labiotrack-web --body \"187.124.47.9\")",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" secret set VPS_PORT --repo oksam90/labiotrack-web --body \"22\")",
       "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" secret set VPS_USER --repo oksam90/labiotrack-web --body \"labiotrack\")",
-      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" secret list --repo oksam90/labiotrack-web)"
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" secret list --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo oksam90/labiotrack-web --limit 5)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23692828719 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" workflow run deploy.yml --repo oksam90/labiotrack-web --ref master)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693036002 --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693036002 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693112035 --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693112035 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693165567 --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693165567 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo oksam90/labiotrack-web --limit 2)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693206293 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693278076 --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693278076 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo oksam90/labiotrack-web --limit 2 --workflow deploy.yml)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693331357 --repo oksam90/labiotrack-web)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run view 23693331357 --repo oksam90/labiotrack-web --log-failed)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" run list --repo oksam90/labiotrack-web --limit 1 --workflow deploy.yml)"
     ]
   }
 }

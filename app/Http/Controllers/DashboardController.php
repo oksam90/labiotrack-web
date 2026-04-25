@@ -17,13 +17,13 @@ class DashboardController extends Controller
         $mois   = Carbon::now()->format('Y-m');
         $moisP  = Carbon::now()->subMonth()->format('Y-m');
 
-        // Utilisateurs globaux sans structure sélectionnée → dashboard réseau
-        // (admin, superadmin, collecteur, prestataire sans tenant en session)
-        if ($user->isGlobal() && ! $tenant) {
+        // Utilisateurs globaux OU réseau-scoped sans structure sélectionnée
+        // → dashboard réseau (filtré par TenantScope pour admin_reseau)
+        if (($user->isGlobal() || $user->isReseauScoped()) && ! $tenant) {
             return redirect()->route('superadmin.index');
         }
 
-        // Utilisateurs locaux sans établissement (ne devrait pas arriver, mais sécurité)
+        // Utilisateurs locaux (qhse, agent) sans établissement → erreur
         if (! $tenant) {
             abort(403, 'Aucun établissement associé à votre compte. Contactez l\'administrateur.');
         }

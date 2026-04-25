@@ -50,6 +50,9 @@ jobs:
             # ── 5. Migrations (si nouvelles) ─────────
             sudo docker exec labiotrack-app php artisan migrate --force
 
+            # ── 5b. Seed du réseau par défaut (idempotent) ──
+            sudo docker exec labiotrack-app php artisan db:seed --class=ReseauSeeder --force
+
             # ── 6. Cache Laravel ─────────────────────
             sudo docker exec labiotrack-app php artisan config:cache
             sudo docker exec labiotrack-app php artisan route:cache

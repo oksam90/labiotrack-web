@@ -232,7 +232,7 @@
         <a href="{{ route('rapports.index') }}" class="sidebar-link {{ request()->is('rapports*') ? 'active' : '' }}">
             <i class="bi bi-file-earmark-bar-graph"></i> Rapports
         </a>
-        @if(in_array(Auth::user()->role, ['superadmin','qhse','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin_reseau','qhse','prestataire']))
         <a href="{{ route('rapports.financier') }}" class="sidebar-link {{ request()->is('rapports/analyse-financiere*') ? 'active' : '' }}">
             <i class="bi bi-currency-dollar"></i> Analyse financière
         </a>
@@ -265,20 +265,35 @@
             @endif
         </a>
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','collecteur','prestataire']))
-        <div class="sidebar-section mt-2">Réseau Global</div>
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','collecteur','prestataire']))
+        <div class="sidebar-section mt-2">
+            @if(Auth::user()->isSuperAdmin()) Réseau Global
+            @elseif(Auth::user()->isAdminReseau()) Mon Réseau
+            @else Vue Réseau
+            @endif
+        </div>
         <a href="{{ route('superadmin.index') }}" class="sidebar-link {{ request()->is('superadmin') ? 'active' : '' }}">
-            <i class="bi bi-diagram-3"></i> Dashboard Réseau
+            <i class="bi bi-diagram-3"></i>
+            @if(Auth::user()->isAdminReseau()) Dashboard Réseau @else Dashboard Réseau @endif
         </a>
         <a href="{{ route('superadmin.etablissements') }}" class="sidebar-link {{ request()->is('superadmin/etablissements*') ? 'active' : '' }}">
-            <i class="bi bi-buildings"></i> Toutes les structures
+            <i class="bi bi-buildings"></i>
+            @if(Auth::user()->isAdminReseau()) Mes établissements @else Toutes les structures @endif
         </a>
         <a href="{{ route('superadmin.comparatif') }}" class="sidebar-link {{ request()->is('superadmin/comparatif*') ? 'active' : '' }}">
             <i class="bi bi-bar-chart-line"></i> Analyse comparative
         </a>
         @endif
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin']))
+        {{-- Gestion des Réseaux : superadmin uniquement --}}
+        @if(Auth::user()->isSuperAdmin())
+        <div class="sidebar-section mt-2">Plateforme</div>
+        <a href="{{ route('reseaux.index') }}" class="sidebar-link {{ request()->is('reseaux*') ? 'active' : '' }}">
+            <i class="bi bi-share"></i> Réseaux
+        </a>
+        @endif
+
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau']))
         <div class="sidebar-section mt-2">Administration</div>
         <a href="{{ route('admin.activites') }}" class="sidebar-link {{ request()->is('admin/activites*') ? 'active' : '' }}">
             <i class="bi bi-activity"></i> Activités temps réel
@@ -295,6 +310,7 @@
         </a>
         <a href="{{ route('admin.contenants') }}" class="sidebar-link {{ request()->is('admin/contenants*') ? 'active' : '' }}">
             <i class="bi bi-box"></i> Contenants
+            @if(Auth::user()->isAdminReseau())<small class="ms-1 text-muted">(lecture)</small>@endif
         </a>
         @endif
     </div>

@@ -17,39 +17,63 @@ class SuperAdminController extends Controller
         $user = Auth::user();
         $mois = Carbon::now()->format('Y-m');
 
-        // KPIs réseau global — CTE cachée 5 min
-        $kpis = Cache::remember(CacheService::superadminKpisKey($mois), CacheService::TTL_DASHBOARD, fn () => DB::selectOne("
+        // ── Périmètre : superadmin/global → tous réseaux ; admin_reseau/admin → leur réseau
+        $reseauId = ($user->isReseauScoped() && $user->reseau_id) ? (int) $user->reseau_id : null;
+
+        // Conditions de filtre dynamiques selon le périmètre
+        // Sur etablissements directement → reseau_id
+        // Sur tables liées (declarations, destructions…) → sous-requête sur etablissement_id
+        $whereEtab = $reseauId ? "WHERE reseau_id = {$reseauId}" : "";
+        $andEtabActif = $reseauId
+            ? "AND reseau_id = {$reseauId}"
+            : "";
+        $inEtabIds = $reseauId
+            ? "AND etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId})"
+            : "";
+        $inEtabUsers = $reseauId
+            ? "AND (etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId}) OR reseau_id = {$reseauId})"
+            : "";
+        // Pour destructions : pas de etablissement_id direct → JOIN via collectes
+        $destFilter = $reseauId
+            ? "AND collecte_id IN (
+                  SELECT id FROM collectes
+                  WHERE etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId})
+              )"
+            : "";
+
+        $kpis = Cache::remember(CacheService::superadminKpisKey($mois, $reseauId), CacheService::TTL_DASHBOARD, fn () => DB::selectOne("
             WITH
             etab_stats AS (
                 SELECT
                     COUNT(*)                                  AS total_structures,
                     SUM(CASE WHEN actif = 1 THEN 1 ELSE 0 END) AS structures_actives
                 FROM etablissements
+                {$whereEtab}
             ),
             user_stats AS (
                 SELECT COUNT(*) AS total_users
-                FROM users WHERE actif = 1
+                FROM users WHERE actif = 1 {$inEtabUsers}
             ),
             alerte_stats AS (
                 SELECT COUNT(*) AS alertes_nonlues
-                FROM alertes WHERE lu = 0
+                FROM alertes WHERE lu = 0 {$inEtabIds}
             ),
             decl_stats AS (
                 SELECT
                     COUNT(*)                          AS declarations_mois,
                     COALESCE(SUM(poids_estime_kg), 0) AS poids_mois_kg
                 FROM declarations
-                WHERE DATE_FORMAT(date_declaration,'%Y-%m') = ?
+                WHERE DATE_FORMAT(date_declaration,'%Y-%m') = ? {$inEtabIds}
             ),
             dest_stats AS (
                 SELECT COUNT(*) AS destructions_mois
                 FROM destructions
-                WHERE DATE_FORMAT(date_destruction,'%Y-%m') = ?
+                WHERE DATE_FORMAT(date_destruction,'%Y-%m') = ? {$destFilter}
             ),
             check_stats AS (
                 SELECT COALESCE(AVG(score_conformite), 0) AS score_moyen
                 FROM checklists
-                WHERE DATE_FORMAT(date_checklist,'%Y-%m') = ?
+                WHERE DATE_FORMAT(date_checklist,'%Y-%m') = ? {$inEtabIds}
             )
             SELECT es.*, us.*, als.*, ds.*, dts.*, cs.*
             FROM etab_stats es, user_stats us, alerte_stats als,
@@ -88,26 +112,34 @@ class SuperAdminController extends Controller
             ])
             ->paginate(10, ['*'], 'structures_page');
 
-        // Évolution réseau 6 mois
+        // Évolution réseau 6 mois (filtrée par réseau si admin_reseau)
         $evolution = [];
         for ($i = 5; $i >= 0; $i--) {
             $d = Carbon::now()->subMonths($i);
+
+            $declQ = DB::table('declarations')
+                ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$d->format('Y-m')]);
+            if ($reseauId) {
+                $declQ->whereIn('etablissement_id', function ($q) use ($reseauId) {
+                    $q->select('id')->from('etablissements')->where('reseau_id', $reseauId);
+                });
+            }
             $evolution[] = [
                 'mois'  => $d->format('M Y'),
-                'poids' => (float)(DB::table('declarations')
-                    ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$d->format('Y-m')])
-                    ->sum('poids_estime_kg') ?? 0),
-                'count' => DB::table('declarations')
-                    ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$d->format('Y-m')])
-                    ->count(),
+                'poids' => (float) ((clone $declQ)->sum('poids_estime_kg') ?? 0),
+                'count' => (clone $declQ)->count(),
             ];
         }
 
-        // Alertes réseau récentes
-        $alertesReseau = DB::table('alertes')
+        // Alertes récentes (filtrées par réseau)
+        $alertesReseauQ = DB::table('alertes')
             ->join('etablissements', 'alertes.etablissement_id', '=', 'etablissements.id')
             ->select('alertes.*', 'etablissements.nom as etab_nom')
-            ->where('alertes.lu', 0)
+            ->where('alertes.lu', 0);
+        if ($reseauId) {
+            $alertesReseauQ->where('etablissements.reseau_id', $reseauId);
+        }
+        $alertesReseau = $alertesReseauQ
             ->orderByDesc('alertes.created_at')
             ->limit(10)->get();
 
@@ -152,7 +184,11 @@ class SuperAdminController extends Controller
 
     public function etablissement($id)
     {
-        $etab = Etablissement::findOrFail($id);
+        // SECURITY : vérifier que l'utilisateur peut accéder à cet établissement
+        abort_unless(Auth::user()->canAccessTenant((int) $id), 403,
+            "Cet établissement ne fait pas partie de votre périmètre.");
+
+        $etab = Etablissement::withoutGlobalScopes()->findOrFail($id);
         $mois = Carbon::now()->format('Y-m');
 
         // KPIs établissement — CTE cachée 5 min
@@ -201,8 +237,20 @@ class SuperAdminController extends Controller
 
     public function switchTenant(Request $request, $id)
     {
-        abort_unless(Auth::user()->isGlobal(), 403, 'Accès non autorisé.');
-        $etab = Etablissement::findOrFail($id);
+        $user = Auth::user();
+        // SECURITY : superadmin OU rôle réseau-scoped ayant accès à l'établissement
+        abort_unless(
+            $user->isGlobal() || $user->isReseauScoped(),
+            403, 'Accès non autorisé.'
+        );
+
+        // Vérifier que l'établissement appartient au périmètre de l'utilisateur
+        abort_unless(
+            $user->canAccessTenant((int) $id),
+            403, "Cet établissement ne fait pas partie de votre périmètre."
+        );
+
+        $etab = Etablissement::withoutGlobalScopes()->findOrFail($id);
         $request->session()->put('admin_tenant_id', $id);
         return redirect()->route('dashboard')
             ->with('success', "Vous visualisez maintenant : {$etab->nom}");

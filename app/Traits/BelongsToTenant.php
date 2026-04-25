@@ -23,8 +23,11 @@ trait BelongsToTenant
         static::creating(function ($model) {
             if (! $model->etablissement_id && auth()->check()) {
                 $user = auth()->user();
-                // Ne pas auto-fill pour les rôles globaux (ils gèrent eux-mêmes)
-                if (! $user->isGlobal()) {
+                // Auto-fill UNIQUEMENT pour les rôles strictement locaux
+                // (qhse, agent). Les admin/admin_reseau/superadmin et
+                // collecteur/prestataire fournissent explicitement la cible.
+                if (in_array($user->role, ['qhse', 'agent'], true)
+                    && $user->etablissement_id) {
                     $model->etablissement_id = $user->etablissement_id;
                 }
             }

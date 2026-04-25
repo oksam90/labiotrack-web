@@ -13,6 +13,7 @@ use App\Http\Controllers\RapportController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\ReseauController;
 
 // ─── AUTH ──────────────────────────────────────────────────────────────────
 Route::get('/', fn() => redirect('/login'));
@@ -87,12 +88,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::prefix('rapports')->name('rapports.')->group(function () {
         Route::get('/',                   [RapportController::class, 'index'])->name('index');
         Route::post('/generer',           [RapportController::class, 'generer'])->name('generer');
-        Route::get('/analyse-financiere', [RapportController::class, 'analyseFinanciere'])->name('financier')->middleware('role:superadmin,qhse,prestataire');
+        Route::get('/analyse-financiere', [RapportController::class, 'analyseFinanciere'])->name('financier')->middleware('role:superadmin,admin_reseau,qhse,prestataire');
         Route::get('/{id}/pdf',           [RapportController::class, 'pdf'])->name('pdf');
     });
 
-    // ── ADMINISTRATION STRUCTURE (admin local) ───────────────────────────
-    Route::prefix('admin')->name('admin.')->middleware('role:admin,superadmin')->group(function () {
+    // ── ADMINISTRATION STRUCTURE (admin local + admin réseau) ────────────
+    Route::prefix('admin')->name('admin.')->middleware('role:admin,admin_reseau,superadmin')->group(function () {
         
         Route::get('/activites',       [AdminController::class, 'activites'])->name('activites');
         Route::get('/activites/data',  [AdminController::class, 'activitesData'])->name('activites.data');
@@ -128,7 +129,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     });
 
     // ── SUPERADMIN — Vue réseau global ──────────────────────────────────────
-    Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin,admin,collecteur,prestataire')->group(function () {
+    Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin,admin,admin_reseau,collecteur,prestataire')->group(function () {
         Route::get('/',                       [SuperAdminController::class, 'index'])->name('index');
         Route::get('/etablissements',         [SuperAdminController::class, 'etablissements'])->name('etablissements');
         Route::get('/etablissements/{id}',    [SuperAdminController::class, 'etablissement'])->name('etablissement');
@@ -140,4 +141,16 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // ── QR CODE ─────────────────────────────────────────────────────────────
     Route::get('/qrcode/local/{etablissement_id}', [QrCodeController::class, 'generateLocal'])->name('qrcode.local');
+
+    // ── RÉSEAUX (gestion superadmin uniquement) ─────────────────────────────
+    Route::prefix('reseaux')->name('reseaux.')->middleware('role:superadmin')->group(function () {
+        Route::get('/',           [ReseauController::class, 'index'])->name('index');
+        Route::get('/create',     [ReseauController::class, 'create'])->name('create');
+        Route::post('/',          [ReseauController::class, 'store'])->name('store');
+        Route::get('/{id}',       [ReseauController::class, 'show'])->name('show');
+        Route::get('/{id}/edit',  [ReseauController::class, 'edit'])->name('edit');
+        Route::put('/{id}',       [ReseauController::class, 'update'])->name('update');
+        Route::delete('/{id}',    [ReseauController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle', [ReseauController::class, 'toggle'])->name('toggle');
+    });
 });

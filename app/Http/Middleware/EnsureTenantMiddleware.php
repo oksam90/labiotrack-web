@@ -13,16 +13,17 @@ use App\Models\Etablissement;
  * Résout le "tenant courant" pour chaque requête authentifiée.
  *
  * Logique par rôle :
- *  - superadmin / admin     → vue globale par défaut, peuvent zoomer via session
- *  - collecteur / prestataire → vue globale également (sans établissement fixe),
- *                               peuvent zoomer sur une structure via session
- *  - qhse / agent           → tenant fixe = leur établissement
+ *  - superadmin              → vue globale par défaut, peut zoomer sur n'importe
+ *                              quel établissement via session admin_tenant_id
+ *  - admin_reseau / admin    → vue limitée à leur réseau, peuvent zoomer sur
+ *                              un établissement de LEUR réseau (vérification reseau_id)
+ *  - collecteur / prestataire → vue globale, peuvent zoomer sur tout établissement
+ *  - qhse / agent            → tenant fixe = leur établissement
  */
 class EnsureTenantMiddleware
 {
     public function handle(Request $request, Closure $next): mixed
     {
-        // Pas d'utilisateur connecté → lier null pour éviter BindingResolutionException
         if (! Auth::check()) {
             app()->instance('currentTenant', null);
             view()->share('currentTenant', null);
@@ -32,26 +33,42 @@ class EnsureTenantMiddleware
 
         $user = Auth::user();
 
-        if ($user->isGlobal()) {
-            // Utilisateurs globaux : peuvent switcher vers une structure via paramètre URL
-            if ($request->has('switch_tenant') && (int) $request->switch_tenant > 0) {
-                $tid = (int) $request->switch_tenant;
+        // Switch tenant via paramètre URL (utilisateurs autorisés)
+        if ($request->has('switch_tenant') && (int) $request->switch_tenant > 0) {
+            $tid = (int) $request->switch_tenant;
+
+            // SECURITY : vérifier que l'utilisateur peut accéder à cet établissement
+            if ($user->canAccessTenant($tid)) {
                 $request->session()->put('admin_tenant_id', $tid);
                 return redirect($request->url())
                     ->with('success', 'Vous visualisez maintenant les données de cette structure.');
             }
-
-            $tenantId = $request->session()->get('admin_tenant_id');
-            $tenant   = $tenantId ? Etablissement::find($tenantId) : null;
-        } else {
-            // Utilisateurs locaux (qhse, agent) → tenant = leur établissement
-            $tenant = $user->etablissement;
+            abort(403, "Accès refusé : cet établissement ne fait pas partie de votre périmètre.");
         }
 
-        // Toujours lier dans le conteneur IoC (même si null)
+        // Détermination du tenant courant
+        if ($user->isGlobal() || $user->isReseauScoped()) {
+            $tenantId = $request->session()->get('admin_tenant_id');
+
+            // SECURITY : si zoom session, vérifier toujours l'autorisation
+            if ($tenantId && ! $user->canAccessTenant((int) $tenantId)) {
+                $request->session()->forget('admin_tenant_id');
+                $tenantId = null;
+            }
+
+            $tenant = $tenantId ? Etablissement::withoutGlobalScopes()->find($tenantId) : null;
+        } else {
+            // Utilisateurs locaux (qhse, agent) — chargement direct sans scope
+            // pour éviter les filtres TenantScope (l'utilisateur EST son tenant)
+            $tenant = $user->etablissement_id
+                ? Etablissement::withoutGlobalScopes()->find($user->etablissement_id)
+                : null;
+        }
+
         app()->instance('currentTenant', $tenant);
         view()->share('currentTenant', $tenant);
-        view()->share('isGlobalView', $user->isGlobal() && ! $tenant);
+        view()->share('isGlobalView',
+            ($user->isGlobal() || $user->isReseauScoped()) && ! $tenant);
 
         return $next($request);
     }
