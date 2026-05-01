@@ -6,6 +6,21 @@
     <div class="d-flex gap-2">
         <form method="POST" action="{{ route('collectes.bordereau', $collecte->id) }}">@csrf
         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Bordereau PDF</button></form>
+        @php
+            $signature = \App\Models\Signature::where('collecte_id', $collecte->id)->first();
+            $canSign = $collecte->statut === 'en_cours' && ! $signature
+                && in_array(Auth::user()->role, ['qhse','agent','collecteur','superadmin']);
+        @endphp
+        @if($canSign)
+        <a href="{{ route('signatures.create', $collecte->id) }}" class="btn btn-success btn-sm">
+            <i class="bi bi-pen me-1"></i>Signature électronique
+        </a>
+        @endif
+        @if($signature)
+        <a href="{{ route('signatures.show', $signature->id) }}" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-shield-check me-1"></i>Voir signature
+        </a>
+        @endif
         @if(!$destruction && in_array(Auth::user()->role,['prestataire','qhse','admin']))
         <a href="{{ route('destructions.create', $collecte->id) }}" class="btn btn-danger btn-sm"><i class="bi bi-fire me-1"></i>Confirmer destruction</a>
         @endif
@@ -20,7 +35,7 @@
     <p><strong>Contenants :</strong> {{ $collecte->nombre_contenants }}</p>
     <p><strong>Poids déclaré :</strong> {{ number_format($collecte->poids_declare_kg,1) }} kg</p>
     <p><strong>Véhicule :</strong> {{ $collecte->vehicule ?? '—' }}</p>
-    @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','complete'=>'success','annule'=>'danger']; @endphp
+    @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','signee'=>'info','complete'=>'success','annule'=>'danger']; @endphp
     <p><strong>Statut :</strong> <span class="badge bg-{{ $colors[$collecte->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$collecte->statut)) }}</span></p>
     @if($destruction)
     <hr>

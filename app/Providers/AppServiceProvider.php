@@ -10,11 +10,13 @@ use App\Models\Collecte;
 use App\Models\Destruction;
 use App\Models\Checklist;
 use App\Models\Etablissement;
+use App\Models\Signature;
 use App\Policies\DeclarationPolicy;
 use App\Policies\CollectePolicy;
 use App\Policies\DestructionPolicy;
 use App\Policies\ChecklistPolicy;
 use App\Policies\EtablissementPolicy;
+use App\Policies\SignaturePolicy;
 use App\Models\Alerte;
 use App\Observers\DeclarationObserver;
 use App\Observers\CollecteObserver;
@@ -59,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Destruction::class,   DestructionPolicy::class);
         Gate::policy(Checklist::class,     ChecklistPolicy::class);
         Gate::policy(Etablissement::class, EtablissementPolicy::class);
+        Gate::policy(Signature::class,     SignaturePolicy::class);
 
         // ── Gates simples (vérifications rapides sans modèle) ─
         Gate::define('access-admin', fn($user) =>

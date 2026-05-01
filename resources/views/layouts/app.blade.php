@@ -210,10 +210,15 @@
         </a>
         @endif
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','collecteur','prestataire']))
         <div class="sidebar-section mt-2">Transport</div>
-        <a href="{{ route('collectes.index') }}" class="sidebar-link {{ request()->is('collectes*') ? 'active' : '' }}">
+        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire']))
+        <a href="{{ route('collectes.index') }}" class="sidebar-link {{ request()->is('collectes*') && ! request()->is('collectes/*/signature') ? 'active' : '' }}">
             <i class="bi bi-truck"></i> Collectes
+        </a>
+        @endif
+        <a href="{{ route('signatures.index') }}" class="sidebar-link {{ request()->is('signatures*') ? 'active' : '' }}">
+            <i class="bi bi-pen"></i> Signatures
         </a>
         @endif
 

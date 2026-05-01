@@ -20,4 +20,13 @@ class Collecte extends Model
     public function collecteur()    { return $this->belongsTo(User::class, 'collecteur_id'); }
     public function declarations()  { return $this->belongsToMany(Declaration::class, 'collecte_declarations'); }
     public function destruction()   { return $this->hasOne(Destruction::class); }
+    public function signature()     { return $this->hasOne(Signature::class); }
+
+    // ── Helpers statut ────────────────────────────────────────────
+    public function isSignee(): bool   { return $this->statut === 'signee'; }
+    public function isComplete(): bool { return $this->statut === 'complete'; }
+    public function canBeSigned(): bool
+    {
+        return $this->statut === 'en_cours' && ! $this->signature()->exists();
+    }
 }

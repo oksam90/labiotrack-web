@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ReseauController;
+use App\Http\Controllers\SignatureController;
 
 // ─── AUTH ──────────────────────────────────────────────────────────────────
 Route::get('/', fn() => redirect('/login'));
@@ -56,6 +57,25 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('/{id}',           [CollecteController::class, 'show'])->name('show');
         Route::post('/{id}/valider',  [CollecteController::class, 'valider'])->name('valider');
         Route::post('/{id}/bordereau',[CollecteController::class, 'bordereau'])->name('bordereau');
+
+    });
+
+    // ── SIGNATURES ÉLECTRONIQUES ───────────────────────────────────────────
+    // Capture (sur la collecte) + historique / preuve / PDF / révocation
+    Route::get('collectes/{id}/signature', [SignatureController::class, 'create'])
+        ->middleware('role:qhse,agent,collecteur,superadmin')
+        ->name('signatures.create');
+    Route::post('collectes/{id}/signature', [SignatureController::class, 'store'])
+        ->middleware('role:qhse')
+        ->name('signatures.store');
+
+    Route::prefix('signatures')->name('signatures.')->group(function () {
+        Route::get('/',          [SignatureController::class, 'index'])->name('index');
+        Route::get('/{id}',      [SignatureController::class, 'show'])->name('show');
+        Route::get('/{id}/pdf',  [SignatureController::class, 'downloadPdf'])->name('pdf');
+        Route::delete('/{id}',   [SignatureController::class, 'revoke'])
+            ->middleware('role:superadmin')
+            ->name('revoke');
     });
 
     // ── DESTRUCTIONS ────────────────────────────────────────────────────────
