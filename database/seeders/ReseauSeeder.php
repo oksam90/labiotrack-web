@@ -17,13 +17,16 @@ class ReseauSeeder extends Seeder
 {
     public function run(): void
     {
+        // Idempotent : clé sur `slug` (contrainte UNIQUE en base).
+        // Évite "Duplicate entry" si le seeder est rejoué et que la
+        // colonne `nom` a été modifiée manuellement entre-temps.
         $reseau = Reseau::firstOrCreate(
-            ['nom' => 'LaBioTrack — Réseau principal'],
+            ['slug' => 'labiotrack-principal'],
             [
-                'slug'              => 'labiotrack-principal',
-                'description'       => 'Réseau par défaut créé lors de la migration vers la matrice multi-réseaux.',
-                'contact_email'     => 'contact@labiotrack.local',
-                'actif'             => true,
+                'nom'           => 'LaBioTrack — Réseau principal',
+                'description'   => 'Réseau par défaut créé lors de la migration vers la matrice multi-réseaux.',
+                'contact_email' => 'contact@labiotrack.local',
+                'actif'         => true,
             ]
         );
 
