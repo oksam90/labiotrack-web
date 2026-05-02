@@ -31,6 +31,12 @@
                     <h5 class="fw-bold mb-1" style="color:#e5e9ef;">Connectez-vous à votre espace LaBioTrack</h5>
                 </div>
 
+                @if(session('warning'))
+                <div class="alert alert-warning py-2 mb-3" style="font-size:.85rem;">
+                    <i class="bi bi-clock-history me-1"></i>{{ session('warning') }}
+                </div>
+                @endif
+
                 @if($errors->any())
                 <div class="alert alert-danger py-2 mb-3" style="font-size:.85rem;">
                     <i class="bi bi-exclamation-triangle me-1"></i>{{ $errors->first() }}

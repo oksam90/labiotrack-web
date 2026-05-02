@@ -26,5 +26,25 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // ── 419 Page Expired ──────────────────────────────────────
+        // Laravel jette TokenMismatchException quand le CSRF expire :
+        //  - onglet de login resté ouvert > SESSION_LIFETIME
+        //  - bouton « précédent » du navigateur après un logout
+        //  - multi-onglets (regenerate() invalide les autres tabs)
         //
+        // ATTENTION : Laravel convertit TokenMismatchException en
+        // HttpException(419) via prepareException() AVANT les renderables.
+        // Il faut donc matcher HttpException et filtrer sur status 419.
+        //
+        // Au lieu d'afficher la page brute « 419 PAGE EXPIRED », on
+        // redirige vers /login avec un message explicite.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+            if ($e->getStatusCode() !== 419) {
+                return null; // laisse Laravel gérer les autres HttpException
+            }
+            return redirect()
+                ->route('login')
+                ->withInput($request->except(['password', '_token']))
+                ->with('warning', 'Votre session a expiré pour des raisons de sécurité. Veuillez vous reconnecter.');
+        });
     })->create();
