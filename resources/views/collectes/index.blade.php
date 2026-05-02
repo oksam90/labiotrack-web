@@ -25,10 +25,20 @@
                         <span class="badge bg-{{ $colors[$c->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$c->statut)) }}</span>
                     </td>
                     <td>
-                        <a href="{{ route('collectes.show', $c->id) }}" class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-eye"></i></a>
+                        <a href="{{ route('collectes.show', $c->id) }}" class="btn btn-sm btn-outline-primary py-0" title="Voir détail"><i class="bi bi-eye"></i></a>
                         <form method="POST" action="{{ route('collectes.bordereau', $c->id) }}" class="d-inline">@csrf
                             <button type="submit" class="btn btn-sm btn-outline-secondary py-0" title="Télécharger bordereau"><i class="bi bi-file-pdf"></i></button>
                         </form>
+                        {{-- Bouton Signer : visible si la policy l'autorise (statut en_cours, pas de signature, rôle ok) --}}
+                        @if($c->statut === 'en_cours')
+                            @php $cm = \App\Models\Collecte::find($c->id); @endphp
+                            @if($cm && Auth::user()->can('signatureOpen', $cm))
+                            <a href="{{ route('signatures.create', $c->id) }}"
+                               class="btn btn-sm btn-outline-success py-0" title="Signer le bordereau">
+                                <i class="bi bi-pen"></i>
+                            </a>
+                            @endif
+                        @endif
                     </td>
                 </tr>
                 @endforeach
