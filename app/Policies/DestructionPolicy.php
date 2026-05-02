@@ -34,8 +34,10 @@ class DestructionPolicy
 
     public function create(User $user): bool
     {
+        // QHSE retiré : la confirmation de destruction est l'acte du
+        // prestataire / des admins. Le QHSE garde la consultation (view).
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','prestataire']);
+            ['superadmin','admin','admin_reseau','prestataire']);
     }
 
     public function delete(User $user, Destruction $destruction): bool

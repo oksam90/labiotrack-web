@@ -21,7 +21,7 @@
                     <td><strong>{{ $c->nombre_contenants }}</strong></td>
                     <td>{{ number_format($c->poids_declare_kg, 1) }} kg</td>
                     <td>
-                        @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','complete'=>'success','annule'=>'danger']; @endphp
+                        @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','signee'=>'success','complete'=>'success','annule'=>'danger']; @endphp
                         <span class="badge bg-{{ $colors[$c->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$c->statut)) }}</span>
                     </td>
                     <td>

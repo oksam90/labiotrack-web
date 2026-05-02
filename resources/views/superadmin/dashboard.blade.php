@@ -203,7 +203,7 @@
                     <td>{{ $c->etablissement_nom ?? '—' }}</td>
                     <td>{{ $c->nombre_contenants }}</td>
                     <td>{{ number_format($c->poids_declare_kg ?? 0, 1) }} kg</td>
-                    <td><span class="badge bg-{{ ['planifie'=>'secondary','en_cours'=>'warning','complete'=>'success','annule'=>'danger'][$c->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$c->statut)) }}</span></td>
+                    <td><span class="badge bg-{{ ['planifie'=>'secondary','en_cours'=>'warning','signee'=>'success','complete'=>'success','annule'=>'danger'][$c->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$c->statut)) }}</span></td>
                     <td><small>{{ \Carbon\Carbon::parse($c->date_collecte)->format('d/m/Y') }}</small></td>
                 </tr>
                 @endforeach

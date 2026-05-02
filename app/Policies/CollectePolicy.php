@@ -28,12 +28,9 @@ class CollectePolicy
             ['superadmin','admin','admin_reseau','qhse','collecteur']);
     }
 
-    public function valider(User $user, Collecte $collecte): bool
-    {
-        if (! $this->view($user, $collecte)) return false;
-        return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','collecteur']);
-    }
+    // L'ability `valider` (double signature texte) a été retirée :
+    // la validation passe désormais par la signature électronique
+    // → voir CollectePolicy::signatureOpen() / signatureSign().
 
     public function delete(User $user, Collecte $collecte): bool
     {
@@ -42,5 +39,55 @@ class CollectePolicy
             return $user->canAccessTenant($collecte->etablissement_id);
         }
         return $user->isQhse() && $user->etablissement_id === $collecte->etablissement_id;
+    }
+
+    // ── Signature électronique (matrice §8) ─────────────────────
+    // Ces deux méthodes vivent ici (et non dans SignaturePolicy) car
+    // Laravel route Gate::can($ability, $model) selon la classe de $model.
+    // Elles opèrent sur une Collecte → doivent être dans CollectePolicy.
+
+    /**
+     * Ouvrir l'écran de signature pour cette collecte.
+     *  - superadmin       : toutes
+     *  - admin_reseau     : son réseau
+     *  - qhse             : son établissement
+     *  - collecteur/agent : collecte qui leur est assignée
+     */
+    public function signatureOpen(User $user, Collecte $collecte): bool
+    {
+        if ($collecte->statut !== 'en_cours') return false;
+        if ($collecte->signature()->exists()) return false;
+
+        if ($user->isSuperAdmin()) return true;
+
+        if ($user->isReseauScoped()) {
+            return $user->canAccessTenant($collecte->etablissement_id);
+        }
+
+        if ($user->isQhse()) {
+            return (int) $user->etablissement_id === (int) $collecte->etablissement_id;
+        }
+
+        if ($user->isCollecteur() || $user->role === 'agent') {
+            return $collecte->collecteur_id !== null
+                && (int) $collecte->collecteur_id === (int) $user->id;
+        }
+
+        return false;
+    }
+
+    /**
+     * Acte de signer (créer la signature) — réservé QHSE de l'établissement,
+     * + superadmin pour cas exceptionnels.
+     */
+    public function signatureSign(User $user, Collecte $collecte): bool
+    {
+        if ($collecte->signature()->exists()) return false;
+        if ($collecte->statut !== 'en_cours') return false;
+
+        if ($user->isSuperAdmin()) return true;
+
+        return $user->isQhse()
+            && (int) $user->etablissement_id === (int) $collecte->etablissement_id;
     }
 }

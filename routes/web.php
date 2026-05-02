@@ -55,7 +55,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::post('/',              [CollecteController::class, 'store'])->name('store');
         Route::get('/scan/{qr}',      [QrCodeController::class, 'scan'])->name('scan');
         Route::get('/{id}',           [CollecteController::class, 'show'])->name('show');
-        Route::post('/{id}/valider',  [CollecteController::class, 'valider'])->name('valider');
+        // Route legacy /valider supprimée — validation par signature électronique
         Route::post('/{id}/bordereau',[CollecteController::class, 'bordereau'])->name('bordereau');
 
     });

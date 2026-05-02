@@ -10,25 +10,30 @@ use App\Models\User;
  * Politique d'accès au module Signature.
  *
  * Suit la matrice définie dans la documentation (section 8) :
- *  - SUPERADMIN     : tous réseaux + révocation
- *  - ADMINRÉSEAU    : son réseau (consultation/PDF, pas de signature)
- *  - QHSE           : son établissement, peut signer
- *  - AGENT COLLECT. : ses collectes (consultation/PDF, pas de signature)
+ *
+ * | Fonctionnalité       | SUPERADMIN  | ADMINRÉSEAU | QHSE          | COLLECTEUR        |
+ * |----------------------|-------------|-------------|---------------|-------------------|
+ * | Ouvrir l'écran       | Tous rés.   | Son réseau  | Son étab.     | Collectes assignées |
+ * | Signer (dessiner)    | N/A         | N/A         | Son étab.     | N/A               |
+ * | Consulter / PDF      | Tous rés.   | Son réseau  | Son étab.     | Ses collectes     |
+ * | Révoquer             | Complet     | Non         | Non           | Non               |
+ *
+ * NOTE : utilisation de == (non strict) pour les comparaisons d'IDs.
+ * Les FK ne sont pas typées explicitement dans $casts, donc selon la
+ * configuration PDO (PDO::ATTR_EMULATE_PREPARES) elles peuvent être
+ * renvoyées en string ou en int. `===` produit alors des faux négatifs.
  */
 class SignaturePolicy
 {
-    /**
-     * Lister l'historique : tous les rôles applicables, scope géré par
-     * le contrôleur via TenantScope + filtres.
-     */
     public function viewAny(User $user): bool
     {
         return in_array($user->role,
-            ['superadmin', 'admin', 'admin_reseau', 'qhse', 'collecteur', 'prestataire']);
+            ['superadmin', 'admin', 'admin_reseau', 'qhse', 'collecteur', 'prestataire', 'agent']);
     }
 
     /**
-     * Voir une signature : même règle que la collecte associée.
+     * Voir une signature : superadmin partout, admin_reseau dans son réseau,
+     * QHSE dans son étab, collecteur sur ses collectes.
      */
     public function view(User $user, Signature $signature): bool
     {
@@ -37,49 +42,21 @@ class SignaturePolicy
             return $user->canAccessTenant($signature->etablissement_id);
         }
         if ($user->isQhse()) {
-            return $user->etablissement_id === $signature->etablissement_id;
+            return (int) $user->etablissement_id === (int) $signature->etablissement_id;
         }
         if ($user->isCollecteur() || $user->role === 'agent') {
-            return $signature->collecte && $signature->collecte->collecteur_id === $user->id;
+            return $signature->collecte
+                && (int) $signature->collecte->collecteur_id === (int) $user->id;
         }
         return false;
     }
 
-    /**
-     * Ouvrir l'écran de signature pour une collecte donnée :
-     * QHSE de l'établissement OU agent collecteur assigné à la collecte
-     * (l'agent présente la tablette, le QHSE signe — voir doc §3.1, §8 note).
-     */
-    public function open(User $user, Collecte $collecte): bool
-    {
-        if (! in_array($collecte->statut, ['en_cours'])) return false;
-        if ($collecte->signature()->exists()) return false;
-
-        if ($user->isQhse() && $user->etablissement_id === $collecte->etablissement_id) {
-            return true;
-        }
-        if (($user->isCollecteur() || $user->role === 'agent')
-            && $collecte->collecteur_id === $user->id) {
-            return true;
-        }
-        return false;
-    }
+    // NOTE : les méthodes open() et sign() opèrent sur une Collecte —
+    // elles vivent dans CollectePolicy (signatureOpen / signatureSign)
+    // car Laravel route Gate::can($ability, $model) selon la classe du modèle.
 
     /**
-     * Acte de signer (créer la signature) : RÉSERVÉ AU CLIENT SIGNATAIRE.
-     * Conformément à la matrice : seul le QHSE de l'établissement signe.
-     */
-    public function sign(User $user, Collecte $collecte): bool
-    {
-        if ($collecte->signature()->exists()) return false;
-        if ($collecte->statut !== 'en_cours') return false;
-
-        return $user->isQhse()
-            && $user->etablissement_id === $collecte->etablissement_id;
-    }
-
-    /**
-     * Télécharger le PDF signé : même règle que view().
+     * Télécharger le PDF signé : même règle que view() + PDF disponible.
      */
     public function downloadPdf(User $user, Signature $signature): bool
     {

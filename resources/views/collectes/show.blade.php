@@ -8,20 +8,21 @@
         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>Bordereau PDF</button></form>
         @php
             $signature = \App\Models\Signature::where('collecte_id', $collecte->id)->first();
-            $canSign = $collecte->statut === 'en_cours' && ! $signature
-                && in_array(Auth::user()->role, ['qhse','agent','collecteur','superadmin']);
+            // Hydrate un modèle Eloquent pour la policy (la $collecte courante
+            // vient de DB::table() → c'est un stdClass)
+            $collecteModel = \App\Models\Collecte::find($collecte->id);
         @endphp
-        @if($canSign)
+        @if($collecteModel && ! $signature && Auth::user()->can('signatureOpen', $collecteModel))
         <a href="{{ route('signatures.create', $collecte->id) }}" class="btn btn-success btn-sm">
             <i class="bi bi-pen me-1"></i>Signature électronique
         </a>
         @endif
-        @if($signature)
+        @if($signature && Auth::user()->can('view', $signature))
         <a href="{{ route('signatures.show', $signature->id) }}" class="btn btn-outline-success btn-sm">
             <i class="bi bi-shield-check me-1"></i>Voir signature
         </a>
         @endif
-        @if(!$destruction && in_array(Auth::user()->role,['prestataire','qhse','admin']))
+        @if(!$destruction && in_array(Auth::user()->role,['prestataire','admin','superadmin','admin_reseau']))
         <a href="{{ route('destructions.create', $collecte->id) }}" class="btn btn-danger btn-sm"><i class="bi bi-fire me-1"></i>Confirmer destruction</a>
         @endif
     </div>
@@ -35,7 +36,7 @@
     <p><strong>Contenants :</strong> {{ $collecte->nombre_contenants }}</p>
     <p><strong>Poids déclaré :</strong> {{ number_format($collecte->poids_declare_kg,1) }} kg</p>
     <p><strong>Véhicule :</strong> {{ $collecte->vehicule ?? '—' }}</p>
-    @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','signee'=>'info','complete'=>'success','annule'=>'danger']; @endphp
+    @php $colors = ['planifie'=>'secondary','en_cours'=>'primary','signee'=>'success','complete'=>'success','annule'=>'danger']; @endphp
     <p><strong>Statut :</strong> <span class="badge bg-{{ $colors[$collecte->statut] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$collecte->statut)) }}</span></p>
     @if($destruction)
     <hr>
@@ -60,14 +61,8 @@
 </div>
 </div>
 </div>
-@if($collecte->statut === 'en_cours')
-<div class="card mt-3"><div class="card-header">Valider la collecte (double signature)</div><div class="card-body">
-<form method="POST" action="{{ route('collectes.valider', $collecte->id) }}">@csrf
-<div class="row g-3">
-<div class="col-md-6"><label class="form-label">Signature établissement</label><input type="text" name="signature_etablissement" class="form-control" placeholder="Nom complet + validation" required></div>
-<div class="col-md-6"><label class="form-label">Signature collecteur</label><input type="text" name="signature_collecteur" class="form-control" placeholder="Nom complet + validation" required></div>
-</div>
-<button type="submit" class="btn btn-primary mt-3"><i class="bi bi-check-circle me-1"></i>Valider la collecte</button>
-</form></div></div>
-@endif
+{{-- Le bloc « Valider la collecte (double signature) » a été retiré :
+     la validation passe désormais par la signature électronique
+     (bouton « Signature électronique » en en-tête, qui crée une
+     entrée signatures + bascule la collecte au statut « signee »). --}}
 @endsection

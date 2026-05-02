@@ -28,6 +28,8 @@ class DestructionController extends Controller
 
     public function create($collecteId)
     {
+        $this->authorize('create', \App\Models\Destruction::class);
+
         $user    = Auth::user();
         $query   = DB::table('collectes')->where('id', $collecteId);
         $user->filtreEtab($query);
@@ -37,6 +39,8 @@ class DestructionController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', \App\Models\Destruction::class);
+
         $request->validate([
             'collecte_id'      => 'required|exists:collectes,id',
             'poids_reel_kg'    => 'required|numeric|min:0.01',

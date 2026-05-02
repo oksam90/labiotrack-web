@@ -29,7 +29,7 @@ class SignatureController extends Controller
     public function create($collecteId)
     {
         $collecte = Collecte::with(['collecteur', 'declarations'])->findOrFail($collecteId);
-        $this->authorize('open', $collecte);
+        $this->authorize('signatureOpen', $collecte);
 
         $etablissement = DB::table('etablissements')->find($collecte->etablissement_id);
 
@@ -45,7 +45,7 @@ class SignatureController extends Controller
     public function store(Request $request, $collecteId)
     {
         $collecte = Collecte::findOrFail($collecteId);
-        $this->authorize('sign', $collecte);
+        $this->authorize('signatureSign', $collecte);
 
         $validated = $request->validate([
             'signature_image'     => 'required|string',

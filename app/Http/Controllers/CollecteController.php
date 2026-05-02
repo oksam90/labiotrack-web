@@ -135,23 +135,10 @@ class CollecteController extends Controller
         return view('collectes.show', compact('collecte', 'declarations', 'destruction'));
     }
 
-    public function valider(Request $request, $id)
-    {
-        $request->validate([
-            'signature_collecteur'    => 'required|string',
-            'signature_etablissement' => 'required|string',
-        ]);
-        $user  = Auth::user();
-        $query = DB::table('collectes')->where('id', $id);
-        $user->filtreEtab($query, 'etablissement_id');
-        $query->update([
-            'statut'                  => 'complete',
-            'signature_collecteur'    => $request->signature_collecteur,
-            'signature_etablissement' => $request->signature_etablissement,
-            'updated_at'              => now(),
-        ]);
-        return redirect()->route('collectes.show', $id)->with('success', 'Collecte validée et signée.');
-    }
+    // NOTE : la méthode legacy valider() (double signature texte) a été
+    // retirée. La validation se fait désormais via la signature électronique
+    // sur tablette — voir SignatureController + Job GenerateBordereauPdf
+    // (le statut passe alors de 'en_cours' à 'signee').
 
     public function bordereau($id)
     {
