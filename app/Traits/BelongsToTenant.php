@@ -11,7 +11,7 @@ use App\Scopes\TenantScope;
  * Rôles GLOBAUX (etablissement_id = NULL) : superadmin, admin, collecteur, prestataire
  * → pas d'auto-fill, ils créent explicitement avec l'etablissement_id cible.
  *
- * Rôles LOCAUX : qhse, agent
+ * Rôles LOCAUX : qhse, agent, client_signataire
  * → etablissement_id rempli automatiquement au CREATE depuis l'utilisateur.
  */
 trait BelongsToTenant
@@ -24,9 +24,10 @@ trait BelongsToTenant
             if (! $model->etablissement_id && auth()->check()) {
                 $user = auth()->user();
                 // Auto-fill UNIQUEMENT pour les rôles strictement locaux
-                // (qhse, agent). Les admin/admin_reseau/superadmin et
-                // collecteur/prestataire fournissent explicitement la cible.
-                if (in_array($user->role, ['qhse', 'agent'], true)
+                // (qhse, agent, client_signataire). Les admin/admin_reseau/
+                // superadmin et collecteur/prestataire fournissent explicitement
+                // la cible.
+                if (in_array($user->role, ['qhse', 'agent', 'client_signataire'], true)
                     && $user->etablissement_id) {
                     $model->etablissement_id = $user->etablissement_id;
                 }

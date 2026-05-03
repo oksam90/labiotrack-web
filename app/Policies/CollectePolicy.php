@@ -10,7 +10,7 @@ class CollectePolicy
     public function viewAny(User $user): bool
     {
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','collecteur','prestataire']);
+            ['superadmin','admin','admin_reseau','qhse','collecteur','prestataire','client_signataire']);
     }
 
     public function view(User $user, Collecte $collecte): bool
@@ -19,11 +19,14 @@ class CollectePolicy
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($collecte->etablissement_id);
         }
-        return $user->etablissement_id === $collecte->etablissement_id;
+        // qhse, agent, client_signataire → leur étab uniquement
+        return (int) $user->etablissement_id === (int) $collecte->etablissement_id;
     }
 
     public function create(User $user): bool
     {
+        // client_signataire EXCLU : son rôle est uniquement de signer
+        // les bordereaux existants, pas de créer de nouvelles collectes.
         return in_array($user->role,
             ['superadmin','admin','admin_reseau','qhse','collecteur']);
     }
@@ -48,10 +51,10 @@ class CollectePolicy
 
     /**
      * Ouvrir l'écran de signature pour cette collecte.
-     *  - superadmin       : toutes
-     *  - admin_reseau     : son réseau
-     *  - qhse             : son établissement
-     *  - collecteur/agent : collecte qui leur est assignée
+     *  - superadmin              : toutes
+     *  - admin_reseau            : son réseau
+     *  - qhse, client_signataire : leur établissement
+     *  - collecteur/agent        : collecte qui leur est assignée
      */
     public function signatureOpen(User $user, Collecte $collecte): bool
     {
@@ -64,7 +67,7 @@ class CollectePolicy
             return $user->canAccessTenant($collecte->etablissement_id);
         }
 
-        if ($user->isQhse()) {
+        if ($user->isQhse() || $user->isClientSignataire()) {
             return (int) $user->etablissement_id === (int) $collecte->etablissement_id;
         }
 
@@ -77,8 +80,8 @@ class CollectePolicy
     }
 
     /**
-     * Acte de signer (créer la signature) — réservé QHSE de l'établissement,
-     * + superadmin pour cas exceptionnels.
+     * Acte de signer (créer la signature) — QHSE et client_signataire
+     * de l'établissement, + superadmin pour cas exceptionnels.
      */
     public function signatureSign(User $user, Collecte $collecte): bool
     {
@@ -87,7 +90,7 @@ class CollectePolicy
 
         if ($user->isSuperAdmin()) return true;
 
-        return $user->isQhse()
+        return ($user->isQhse() || $user->isClientSignataire())
             && (int) $user->etablissement_id === (int) $collecte->etablissement_id;
     }
 }

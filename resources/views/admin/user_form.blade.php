@@ -5,18 +5,19 @@
     $current = auth()->user();
     // Rôles attribuables selon l'utilisateur courant
     $rolesDisponibles = $current->isSuperAdmin()
-        ? ["superadmin","admin","admin_reseau","qhse","agent","collecteur","prestataire"]
+        ? ["superadmin","admin","admin_reseau","qhse","agent","collecteur","prestataire","client_signataire"]
         : ($current->isAdminReseau()
-            ? ["admin","qhse","agent"] // AdminRéseau ne peut pas créer un autre AdminRéseau
-            : ["qhse","agent"]); // admin local
+            ? ["admin","qhse","agent","client_signataire"] // AdminRéseau ne peut pas créer un autre AdminRéseau
+            : ["qhse","agent","client_signataire"]); // admin local
     $rolesLabels = [
-        'superadmin'   => 'SuperAdmin',
-        'admin'        => 'Admin (établissement)',
-        'admin_reseau' => 'AdminRéseau',
-        'qhse'         => 'QHSE',
-        'agent'        => 'Agent',
-        'collecteur'   => 'Collecteur',
-        'prestataire'  => 'Prestataire',
+        'superadmin'        => 'SuperAdmin',
+        'admin'             => 'Admin (établissement)',
+        'admin_reseau'      => 'AdminRéseau',
+        'qhse'              => 'QHSE',
+        'agent'             => 'Agent',
+        'collecteur'        => 'Collecteur',
+        'prestataire'       => 'Prestataire',
+        'client_signataire' => 'Client signataire',
     ];
 @endphp
 

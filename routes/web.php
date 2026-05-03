@@ -62,11 +62,13 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     // ── SIGNATURES ÉLECTRONIQUES ───────────────────────────────────────────
     // Capture (sur la collecte) + historique / preuve / PDF / révocation
+    // Note : la policy CollectePolicy::signatureOpen / signatureSign affine
+    // ensuite le contrôle (étab du user, statut collecte, etc.).
     Route::get('collectes/{id}/signature', [SignatureController::class, 'create'])
-        ->middleware('role:qhse,agent,collecteur,superadmin')
+        ->middleware('role:qhse,agent,collecteur,superadmin,admin_reseau,client_signataire')
         ->name('signatures.create');
     Route::post('collectes/{id}/signature', [SignatureController::class, 'store'])
-        ->middleware('role:qhse')
+        ->middleware('role:qhse,superadmin,client_signataire')
         ->name('signatures.store');
 
     Route::prefix('signatures')->name('signatures.')->group(function () {

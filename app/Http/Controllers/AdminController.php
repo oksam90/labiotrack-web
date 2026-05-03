@@ -229,7 +229,7 @@ class AdminController extends Controller
             'prenom'   => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire',
+            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire,client_signataire',
             'reseau_id'        => 'nullable|exists:reseaux,id',
             'etablissement_id' => 'nullable|exists:etablissements,id',
         ], [
@@ -265,6 +265,12 @@ class AdminController extends Controller
             && $user->etablissement_id
             && ! in_array($request->role, ['collecteur','prestataire','admin_reseau','superadmin'])) {
             $etabId = $user->etablissement_id;
+        }
+
+        // client_signataire : SÉCURITÉ — un établissement est obligatoire
+        // (sa fonction unique = signer pour son étab).
+        if ($request->role === 'client_signataire' && ! $etabId) {
+            abort(422, "Le rôle Client signataire requiert un établissement.");
         }
 
         DB::table('users')->insert([
@@ -311,7 +317,7 @@ class AdminController extends Controller
             'nom'      => 'required|string|max:100',
             'prenom'   => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email,'.$id,
-            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire',
+            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire,client_signataire',
             'reseau_id'        => 'nullable|exists:reseaux,id',
             'etablissement_id' => 'nullable|exists:etablissements,id',
         ];

@@ -34,6 +34,11 @@ class AuthController extends Controller
                 'last_login_ip' => $request->ip(),
             ]);
 
+            // Client signataire : son seul rôle est de signer → écran collectes
+            if ($user->isClientSignataire()) {
+                return redirect()->route('collectes.index');
+            }
+
             // Tous les utilisateurs globaux sans établissement fixe → dashboard réseau
             // Cela inclut : superadmin, admin, collecteur, prestataire
             if ($user->isGlobal() && ! $user->etablissement_id) {

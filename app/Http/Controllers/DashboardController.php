@@ -17,6 +17,13 @@ class DashboardController extends Controller
         $mois   = Carbon::now()->format('Y-m');
         $moisP  = Carbon::now()->subMonth()->format('Y-m');
 
+        // Client signataire : périmètre fonctionnel réduit aux Collectes
+        // et Signatures. Pas de tableau de bord pertinent → redirection
+        // directe vers la liste des collectes (sa mission unique).
+        if ($user->isClientSignataire()) {
+            return redirect()->route('collectes.index');
+        }
+
         // Utilisateurs globaux OU réseau-scoped sans structure sélectionnée
         // → dashboard réseau (filtré par TenantScope pour admin_reseau)
         if (($user->isGlobal() || $user->isReseauScoped()) && ! $tenant) {

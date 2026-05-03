@@ -34,6 +34,8 @@ class CollecteController extends Controller
 
     public function create()
     {
+        $this->authorize('create', \App\Models\Collecte::class);
+
         $user  = Auth::user();
         $decQuery = DB::table('declarations')
             ->join('services', 'declarations.service_id', '=', 'services.id')
@@ -51,6 +53,8 @@ class CollecteController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', \App\Models\Collecte::class);
+
         $request->validate([
             'collecteur_id'   => 'nullable|exists:users,id',
             'declarations'    => 'required|array|min:1',

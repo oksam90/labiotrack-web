@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Auth;
  *   - admin          → son réseau uniquement (admin local promu à la maille réseau)
  *
  * Vue ÉTABLISSEMENT :
- *   - qhse, agent    → limités à leur établissement
+ *   - qhse, agent, client_signataire → limités à leur établissement
  *
  * Override : si `admin_tenant_id` est en session ET autorisé,
  * filtre sur cet établissement précis (zoom).
@@ -62,7 +62,7 @@ class TenantScope implements Scope
             return;
         }
 
-        // Vue locale (qhse, agent) → leur établissement
+        // Vue locale (qhse, agent, client_signataire) → leur établissement
         if ($user->etablissement_id) {
             if ($table === 'etablissements') {
                 $builder->where("$table.id", $user->etablissement_id);

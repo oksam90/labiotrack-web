@@ -192,10 +192,12 @@
 
     <!-- Navigation -->
     <div class="py-2">
+        @unless(Auth::user()->isClientSignataire())
         <div class="sidebar-section">Navigation</div>
         <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->is('dashboard') ? 'active' : '' }}">
             <i class="bi bi-grid-1x2"></i> Tableau de bord
         </a>
+        @endunless
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','agent','prestataire']))
         <div class="sidebar-section mt-2">Production</div>
@@ -210,9 +212,9 @@
         </a>
         @endif
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','collecteur','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','collecteur','prestataire','client_signataire']))
         <div class="sidebar-section mt-2">Transport</div>
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire','client_signataire']))
         <a href="{{ route('collectes.index') }}" class="sidebar-link {{ request()->is('collectes*') && ! request()->is('collectes/*/signature') ? 'active' : '' }}">
             <i class="bi bi-truck"></i> Collectes
         </a>
@@ -244,6 +246,7 @@
         @endif
         @endif
 
+        @unless(Auth::user()->isClientSignataire())
         <div class="sidebar-section mt-2">Alertes</div>
         <a href="{{ route('alertes.index') }}" class="sidebar-link {{ request()->is('alertes*') ? 'active' : '' }}">
             <i class="bi bi-bell"></i> Alertes
@@ -269,6 +272,7 @@
             <span class="badge-sidebar">{{ $alertCount }}</span>
             @endif
         </a>
+        @endunless
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','collecteur','prestataire']))
         <div class="sidebar-section mt-2">

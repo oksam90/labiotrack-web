@@ -58,6 +58,7 @@ class User extends Authenticatable
     public function isAgent()       : bool { return $this->role === 'agent'; }
     public function isCollecteur()  : bool { return $this->role === 'collecteur'; }
     public function isPrestataire() : bool { return $this->role === 'prestataire'; }
+    public function isClientSignataire() : bool { return $this->role === 'client_signataire'; }
 
     /**
      * Vue GLOBALE = tous réseaux. Réservé au superadmin et aux rôles

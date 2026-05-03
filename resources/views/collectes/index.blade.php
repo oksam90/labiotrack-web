@@ -3,6 +3,7 @@
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4 class="fw-bold mb-0"><i class="bi bi-truck me-2 text-primary"></i>Gestion des collectes</h4>
+    {{-- client_signataire EXCLU : son rôle est de signer, pas de créer --}}
     @if(in_array(Auth::user()->role, ['admin','qhse','collecteur']))
     <a href="{{ route('collectes.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>Nouvelle collecte</a>
     @endif
