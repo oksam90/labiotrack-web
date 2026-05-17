@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Déchets Biomédicaux') — Plateforme LaBioTrack</title>
+    <title>@yield('title', __('nav.brand_platform')) — LaBioTrack</title>
 
     <!-- Bootstrap 5 + Icons -->
     <link rel="icon" type="image/png" href="{{ asset('labiotrack-favicon.png') }}">
@@ -159,7 +159,7 @@
         <div class="d-flex align-items-center gap-2 mb-1">
             <i class="bi bi-virus2 text-success"></i>
             <div>
-                <h6 class="mb-0">Plateforme</h6>
+                <h6 class="mb-0">{{ __('nav.brand_platform') }}</h6>
                 <h4 class="mb-0">LaBio<span style="color:var(--secondary)">Track</span></h4>
             </div>
         </div>
@@ -179,12 +179,12 @@
     {{-- Bannière tenant courant (pour admin en mode structure) --}}
     @if(Auth::user()->isGlobal() && isset($currentTenant) && $currentTenant)
     <div style="background:rgba(212,160,23,.15);border-bottom:1px solid rgba(212,160,23,.3);padding:.5rem 1rem;">
-        <div style="font-size:.65rem;color:#D4A017;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">Vue filtrée</div>
+        <div style="font-size:.65rem;color:#D4A017;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">{{ __('nav.filtered_view') }}</div>
         <div style="color:#fff;font-size:.78rem;font-weight:600;">{{ $currentTenant->nom }}</div>
         <form method="POST" action="{{ route('superadmin.reset-tenant') }}" class="d-inline">
             @csrf
             <button type="submit" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:.68rem;padding:0;cursor:pointer;text-decoration:underline;">
-                ← Vue réseau globale
+                {{ __('nav.back_to_global') }}
             </button>
         </form>
     </div>
@@ -193,63 +193,63 @@
     <!-- Navigation -->
     <div class="py-2">
         @unless(Auth::user()->isClientSignataire())
-        <div class="sidebar-section">Navigation</div>
+        <div class="sidebar-section">{{ __('nav.section_navigation') }}</div>
         <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->is('dashboard') ? 'active' : '' }}">
-            <i class="bi bi-grid-1x2"></i> Tableau de bord
+            <i class="bi bi-grid-1x2"></i> {{ __('nav.dashboard') }}
         </a>
         @endunless
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','agent','prestataire']))
-        <div class="sidebar-section mt-2">Production</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_production') }}</div>
         <a href="{{ route('declarations.index') }}" class="sidebar-link {{ request()->is('declarations*') ? 'active' : '' }}">
-            <i class="bi bi-clipboard-plus"></i> Déclarations
+            <i class="bi bi-clipboard-plus"></i> {{ __('nav.declarations') }}
         </a>
         <a href="{{ route('declarations.create') }}" class="sidebar-link">
-            <i class="bi bi-plus-circle"></i> Nouvelle déclaration
+            <i class="bi bi-plus-circle"></i> {{ __('nav.new_declaration') }}
         </a>
         <a href="{{ route('stockage.index') }}" class="sidebar-link {{ request()->is('stockage*') ? 'active' : '' }}">
-            <i class="bi bi-archive"></i> Stockage interne
+            <i class="bi bi-archive"></i> {{ __('nav.storage') }}
         </a>
         @endif
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','collecteur','prestataire','client_signataire']))
-        <div class="sidebar-section mt-2">Transport</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_transport') }}</div>
         @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire','client_signataire']))
         <a href="{{ route('collectes.index') }}" class="sidebar-link {{ request()->is('collectes*') && ! request()->is('collectes/*/signature') ? 'active' : '' }}">
-            <i class="bi bi-truck"></i> Collectes
+            <i class="bi bi-truck"></i> {{ __('nav.collectes') }}
         </a>
         @endif
         <a href="{{ route('signatures.index') }}" class="sidebar-link {{ request()->is('signatures*') ? 'active' : '' }}">
-            <i class="bi bi-pen"></i> Signatures
+            <i class="bi bi-pen"></i> {{ __('nav.signatures') }}
         </a>
         @endif
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','prestataire']))
-        <div class="sidebar-section mt-2">Destruction</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_destruction') }}</div>
         <a href="{{ route('destructions.index') }}" class="sidebar-link {{ request()->is('destructions*') ? 'active' : '' }}">
-            <i class="bi bi-fire"></i> Destructions
+            <i class="bi bi-fire"></i> {{ __('nav.destructions') }}
         </a>
         @endif
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','prestataire']))
-        <div class="sidebar-section mt-2">Conformité & Analyse</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_compliance') }}</div>
         <a href="{{ route('checklists.index') }}" class="sidebar-link {{ request()->is('checklists*') ? 'active' : '' }}">
-            <i class="bi bi-check2-square"></i> Checklists
+            <i class="bi bi-check2-square"></i> {{ __('nav.checklists') }}
         </a>
         <a href="{{ route('rapports.index') }}" class="sidebar-link {{ request()->is('rapports*') ? 'active' : '' }}">
-            <i class="bi bi-file-earmark-bar-graph"></i> Rapports
+            <i class="bi bi-file-earmark-bar-graph"></i> {{ __('nav.reports') }}
         </a>
         @if(in_array(Auth::user()->role, ['superadmin','admin_reseau','qhse','prestataire']))
         <a href="{{ route('rapports.financier') }}" class="sidebar-link {{ request()->is('rapports/analyse-financiere*') ? 'active' : '' }}">
-            <i class="bi bi-currency-dollar"></i> Analyse financière
+            <i class="bi bi-currency-dollar"></i> {{ __('nav.financial_analysis') }}
         </a>
         @endif
         @endif
 
         @unless(Auth::user()->isClientSignataire())
-        <div class="sidebar-section mt-2">Alertes</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_alerts') }}</div>
         <a href="{{ route('alertes.index') }}" class="sidebar-link {{ request()->is('alertes*') ? 'active' : '' }}">
-            <i class="bi bi-bell"></i> Alertes
+            <i class="bi bi-bell"></i> {{ __('nav.alerts') }}
             @php
                 $authUser = Auth::user();
                 if ($authUser->isGlobal()) {
@@ -276,50 +276,50 @@
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','collecteur','prestataire']))
         <div class="sidebar-section mt-2">
-            @if(Auth::user()->isSuperAdmin()) Réseau Global
-            @elseif(Auth::user()->isAdminReseau()) Mon Réseau
-            @else Vue Réseau
+            @if(Auth::user()->isSuperAdmin()) {{ __('nav.section_network_global') }}
+            @elseif(Auth::user()->isAdminReseau()) {{ __('nav.section_network_my') }}
+            @else {{ __('nav.section_network_view') }}
             @endif
         </div>
         <a href="{{ route('superadmin.index') }}" class="sidebar-link {{ request()->is('superadmin') ? 'active' : '' }}">
             <i class="bi bi-diagram-3"></i>
-            @if(Auth::user()->isAdminReseau()) Dashboard Réseau @else Dashboard Réseau @endif
+            {{ __('nav.network_dashboard') }}
         </a>
         <a href="{{ route('superadmin.etablissements') }}" class="sidebar-link {{ request()->is('superadmin/etablissements*') ? 'active' : '' }}">
             <i class="bi bi-buildings"></i>
-            @if(Auth::user()->isAdminReseau()) Mes établissements @else Toutes les structures @endif
+            @if(Auth::user()->isAdminReseau()) {{ __('nav.my_establishments') }} @else {{ __('nav.all_structures') }} @endif
         </a>
         <a href="{{ route('superadmin.comparatif') }}" class="sidebar-link {{ request()->is('superadmin/comparatif*') ? 'active' : '' }}">
-            <i class="bi bi-bar-chart-line"></i> Analyse comparative
+            <i class="bi bi-bar-chart-line"></i> {{ __('nav.comparative_analysis') }}
         </a>
         @endif
 
         {{-- Gestion des Réseaux : superadmin uniquement --}}
         @if(Auth::user()->isSuperAdmin())
-        <div class="sidebar-section mt-2">Plateforme</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_platform') }}</div>
         <a href="{{ route('reseaux.index') }}" class="sidebar-link {{ request()->is('reseaux*') ? 'active' : '' }}">
-            <i class="bi bi-share"></i> Réseaux
+            <i class="bi bi-share"></i> {{ __('nav.networks') }}
         </a>
         @endif
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau']))
-        <div class="sidebar-section mt-2">Administration</div>
+        <div class="sidebar-section mt-2">{{ __('nav.section_administration') }}</div>
         <a href="{{ route('admin.activites') }}" class="sidebar-link {{ request()->is('admin/activites*') ? 'active' : '' }}">
-            <i class="bi bi-activity"></i> Activités temps réel
+            <i class="bi bi-activity"></i> {{ __('nav.realtime_activity') }}
             <span class="pulse-dot ms-auto" style="width:8px;height:8px;border-radius:50%;background:#16a34a;animation:pulse 1.5s infinite;flex-shrink:0;"></span>
         </a>
         <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->is('admin/etablissements*') ? 'active' : '' }}">
-            <i class="bi bi-building"></i> Établissements
+            <i class="bi bi-building"></i> {{ __('nav.establishments') }}
         </a>
         <a href="{{ route('admin.utilisateurs.index') }}" class="sidebar-link {{ request()->is('admin/utilisateurs*') ? 'active' : '' }}">
-            <i class="bi bi-people"></i> Utilisateurs
+            <i class="bi bi-people"></i> {{ __('nav.users') }}
         </a>
         <a href="{{ route('admin.services') }}" class="sidebar-link {{ request()->is('admin/services*') ? 'active' : '' }}">
-            <i class="bi bi-diagram-3"></i> Services
+            <i class="bi bi-diagram-3"></i> {{ __('nav.services') }}
         </a>
         <a href="{{ route('admin.contenants') }}" class="sidebar-link {{ request()->is('admin/contenants*') ? 'active' : '' }}">
-            <i class="bi bi-box"></i> Contenants
-            @if(Auth::user()->isAdminReseau())<small class="ms-1 text-muted">(lecture)</small>@endif
+            <i class="bi bi-box"></i> {{ __('nav.containers') }}
+            @if(Auth::user()->isAdminReseau())<small class="ms-1 text-muted">{{ __('nav.containers_readonly') }}</small>@endif
         </a>
         @endif
     </div>
@@ -340,7 +340,7 @@
         <form action="{{ route('logout') }}" method="POST" class="mt-2">
             @csrf
             <button type="submit" class="btn btn-sm w-100" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1);">
-                <i class="bi bi-box-arrow-left me-1"></i> Déconnexion
+                <i class="bi bi-box-arrow-left me-1"></i> {{ __('nav.logout') }}
             </button>
         </form>
     </div>
@@ -353,7 +353,7 @@
         <button class="btn btn-sm d-md-none me-1" onclick="document.getElementById('sidebar').classList.toggle('show')">
             <i class="bi bi-list fs-5"></i>
         </button>
-        <div class="topbar-title">@yield('title', 'Tableau de bord')</div>
+        <div class="topbar-title">@yield('title', __('nav.topbar_default_title'))</div>
 
         <!-- Alertes rapides -->
         @if(isset($alertCount) && $alertCount > 0)
@@ -362,6 +362,28 @@
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem;">{{ $alertCount }}</span>
         </a>
         @endif
+
+        {{-- ── Sélecteur de langue (Phase 0 i18n) ──────────────── --}}
+        <div class="dropdown me-2">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                    title="{{ __('common.locale_fr') }} / {{ __('common.locale_en') }}">
+                <i class="bi bi-translate"></i> {{ strtoupper(app()->getLocale()) }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                @foreach(config('app.supported_locales', ['fr','en']) as $loc)
+                <li>
+                    <form method="POST" action="{{ route('locale.switch', $loc) }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="dropdown-item {{ app()->getLocale() === $loc ? 'active fw-bold' : '' }}">
+                            {{ __('common.locale_' . $loc) }}
+                            @if(app()->getLocale() === $loc)<i class="bi bi-check2 ms-2"></i>@endif
+                        </button>
+                    </form>
+                </li>
+                @endforeach
+            </ul>
+        </div>
 
         <div class="d-flex align-items-center gap-2">
             <div class="avatar">{{ strtoupper(substr(Auth::user()->prenom,0,1).substr(Auth::user()->nom,0,1)) }}</div>

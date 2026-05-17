@@ -26,7 +26,7 @@ class AuthController extends Controller
 
             if (! $user->actif) {
                 Auth::logout();
-                return back()->withErrors(['email' => 'Votre compte a été désactivé.']);
+                return back()->withErrors(['email' => __('auth_ui.account_disabled')]);
             }
 
             $user->update([
@@ -49,7 +49,7 @@ class AuthController extends Controller
         }
 
         return back()
-            ->withErrors(['email' => 'Identifiants incorrects.'])
+            ->withErrors(['email' => __('auth_ui.bad_credentials')])
             ->withInput($request->except('password'));
     }
 

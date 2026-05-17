@@ -59,7 +59,7 @@ class SignatureController extends Controller
         $imageData = base64_decode($base64, true);
         if ($imageData === false || strlen($imageData) < 100) {
             throw ValidationException::withMessages([
-                'signature_image' => 'Image de signature invalide.',
+                'signature_image' => __('signatures.invalid_image'),
             ]);
         }
 
@@ -94,14 +94,14 @@ class SignatureController extends Controller
 
         if ($request->expectsJson() || $request->wantsJson()) {
             return response()->json([
-                'message'      => 'Signature enregistrée avec succès.',
+                'message'      => __('signatures.created_async_pending'),
                 'signature_id' => $signature->id,
                 'redirect'     => route('signatures.show', $signature->id),
             ], 201);
         }
 
         return redirect()->route('signatures.show', $signature->id)
-            ->with('success', 'Signature enregistrée. Le PDF est en cours de génération.');
+            ->with('success', __('signatures.created_success'));
     }
 
     // ── 3. Historique ─────────────────────────────────────────────
@@ -187,7 +187,7 @@ class SignatureController extends Controller
         $this->authorize('downloadPdf', $signature);
 
         if (! $signature->pdfReady() || ! Storage::disk('local')->exists($signature->pdf_path)) {
-            return back()->with('error', 'Le PDF n\'est pas encore disponible. Réessayez dans quelques secondes.');
+            return back()->with('error', __('signatures.pdf_not_ready'));
         }
 
         $filename = sprintf(
@@ -221,7 +221,7 @@ class SignatureController extends Controller
         }
 
         return redirect()->route('signatures.show', $signature->id)
-            ->with('success', 'Signature révoquée. La collecte peut être signée à nouveau.');
+            ->with('success', __('signatures.revoked_success'));
     }
 
     // ── Helpers ───────────────────────────────────────────────────

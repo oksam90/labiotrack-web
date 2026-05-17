@@ -1,9 +1,9 @@
 @extends('layouts.app')
-@section('title','Nouvelle Checklist')
+@section('title', __('checklists.page_create_title'))
 @section('content')
 <div class="page-header">
-    <h4 class="fw-bold mb-0"><i class="bi bi-check2-square me-2 text-success"></i>Checklist de conformité</h4>
-    <small class="text-muted">Évaluation des pratiques — Score calculé automatiquement</small>
+    <h4 class="fw-bold mb-0"><i class="bi bi-check2-square me-2 text-success"></i>{{ __('checklists.header_create') }}</h4>
+    <small class="text-muted">{{ __('checklists.subtitle_create') }}</small>
 </div>
 <div class="row justify-content-center">
 <div class="col-md-7">
@@ -12,23 +12,23 @@
 <form method="POST" action="{{ route('checklists.store') }}">
 @csrf
 <div class="mb-3">
-    <label class="form-label">Service (optionnel)</label>
+    <label class="form-label">{{ __('checklists.form_service') }}</label>
     <select name="service_id" class="form-select">
-        <option value="">— Général (tout l'établissement) —</option>
+        <option value="">{{ __('checklists.form_service_general') }}</option>
         @foreach($services as $s)<option value="{{ $s->id }}">{{ $s->nom }}</option>@endforeach
     </select>
 </div>
 
 <div class="mb-4">
-    <label class="form-label fw-bold">Points de contrôle</label>
+    <label class="form-label fw-bold">{{ __('checklists.form_checkpoints') }}</label>
     @php
     $items = [
-        'boites_fermees_75' => ['label'=>'Boîtes de sécurité fermées aux 3/4', 'desc'=>'Toutes les boîtes piquants-coupants sont correctement fermées avant remplissage complet', 'icon'=>'📦'],
-        'sacs_correctement_etiquetes' => ['label'=>'Sacs correctement étiquetés', 'desc'=>'Les sacs jaunes portent les mentions réglementaires obligatoires', 'icon'=>'🏷️'],
-        'local_ventile' => ['label'=>'Local de stockage ventilé', 'desc'=>'Le local central dispose d\'une ventilation adéquate et est maintenu propre', 'icon'=>'💨'],
-        'epi_port' => ['label'=>'Port des EPI respecté', 'desc'=>'Le personnel porte les équipements de protection individuelle requis', 'icon'=>'🧤'],
-        'sacs_noirs_non_contamines' => ['label'=>'Sacs noirs non contaminés', 'desc'=>'Aucun déchet DASRI n\'est mélangé dans les sacs noirs assimilés ménagers', 'icon'=>'⚫'],
-        'contenants_integres' => ['label'=>'Contenants intègres (non percés)', 'desc'=>'Tous les contenants sont en bon état, sans fuite ni perforation', 'icon'=>'✅'],
+        'boites_fermees_75'           => ['label_key'=>'item_boites_label',   'desc_key'=>'item_boites_desc',   'icon'=>'📦'],
+        'sacs_correctement_etiquetes' => ['label_key'=>'item_sacs_label',     'desc_key'=>'item_sacs_desc',     'icon'=>'🏷️'],
+        'local_ventile'               => ['label_key'=>'item_local_label',    'desc_key'=>'item_local_desc',    'icon'=>'💨'],
+        'epi_port'                    => ['label_key'=>'item_epi_label',      'desc_key'=>'item_epi_desc',      'icon'=>'🧤'],
+        'sacs_noirs_non_contamines'   => ['label_key'=>'item_noirs_label',    'desc_key'=>'item_noirs_desc',    'icon'=>'⚫'],
+        'contenants_integres'         => ['label_key'=>'item_integres_label', 'desc_key'=>'item_integres_desc', 'icon'=>'✅'],
     ];
     @endphp
 
@@ -38,8 +38,8 @@
         <div class="d-flex align-items-start gap-3 p-3 rounded border checklist-item" style="cursor:pointer;" data-target="{{ $key }}">
             <div style="font-size:1.5rem;">{{ $item['icon'] }}</div>
             <div class="flex-fill">
-                <div class="fw-semibold">{{ $item['label'] }}</div>
-                <small class="text-muted">{{ $item['desc'] }}</small>
+                <div class="fw-semibold">{{ __('checklists.' . $item['label_key']) }}</div>
+                <small class="text-muted">{{ __('checklists.' . $item['desc_key']) }}</small>
             </div>
             <div class="form-check form-switch mt-1">
                 <input class="form-check-input" type="checkbox" name="{{ $key }}" id="{{ $key }}" value="1" role="switch" style="width:2.5rem;height:1.3rem;" onchange="updateScore()">
@@ -51,19 +51,19 @@
 </div>
 
 <div class="mb-3 p-3 rounded text-center" style="background:#f0fdf4;border:2px solid #1B6B3A;">
-    <div style="font-size:.85rem;color:#1B6B3A;font-weight:600;">Score de conformité calculé</div>
+    <div style="font-size:.85rem;color:#1B6B3A;font-weight:600;">{{ __('checklists.score_computed') }}</div>
     <div id="score-display" style="font-size:2.5rem;font-weight:800;color:#1B6B3A;">0%</div>
     <div class="progress mt-1" style="height:8px;"><div id="score-bar" class="progress-bar bg-success" style="width:0%"></div></div>
 </div>
 
 <div class="mb-4">
-    <label class="form-label">Observations (optionnel)</label>
-    <textarea name="observations" class="form-control" rows="3" placeholder="Notes, actions correctives prévues..."></textarea>
+    <label class="form-label">{{ __('checklists.form_observations') }}</label>
+    <textarea name="observations" class="form-control" rows="3" placeholder="{{ __('checklists.form_observations_ph') }}"></textarea>
 </div>
 
 <div class="d-flex gap-2">
-    <button type="submit" class="btn btn-primary flex-fill py-2"><i class="bi bi-save me-2"></i>Enregistrer la checklist</button>
-    <a href="{{ route('checklists.index') }}" class="btn btn-outline-secondary">Annuler</a>
+    <button type="submit" class="btn btn-primary flex-fill py-2"><i class="bi bi-save me-2"></i>{{ __('checklists.btn_save') }}</button>
+    <a href="{{ route('checklists.index') }}" class="btn btn-outline-secondary">{{ __('common.cancel') }}</a>
 </div>
 </form>
 </div>
@@ -84,12 +84,8 @@ function updateScore() {
     document.getElementById('score-display').style.color = score >= 80 ? '#1B6B3A' : score >= 60 ? '#D4A017' : '#C0392B';
 }
 
-// ✅ CORRIGÉ : on écoute le clic sur la zone, mais on ignore si la cible est déjà l'input
-// pour éviter le double-toggle (clic sur le switch = l'input est togglé par le navigateur,
-// puis l'écouteur le retogglait une 2e fois → restait bloqué)
 document.querySelectorAll('.checklist-item').forEach(item => {
     item.addEventListener('click', function(e) {
-        // Si le clic vient directement du checkbox, ne rien faire (le navigateur l'a déjà géré)
         if (e.target.type === 'checkbox') return;
         const targetId = this.dataset.target;
         const cb = document.getElementById(targetId);

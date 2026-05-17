@@ -1,9 +1,14 @@
 @extends('layouts.app')
-@section('title','Historique Conformité')
+@section('title', __('checklists.page_historique_title'))
 @section('content')
-<div class="page-header"><h4>Historique des scores de conformité</h4></div>
+<div class="page-header"><h4>{{ __('checklists.header_historique') }}</h4></div>
 <div class="card"><div class="table-responsive"><table class="table mb-0">
-<thead><tr><th>Mois</th><th>Score moyen</th><th>Nb checklists</th><th>Progression</th></tr></thead>
+<thead><tr>
+    <th>{{ __('checklists.col_month') }}</th>
+    <th>{{ __('checklists.col_score_avg') }}</th>
+    <th>{{ __('checklists.col_count') }}</th>
+    <th>{{ __('checklists.col_progress') }}</th>
+</tr></thead>
 <tbody>
 @foreach($historique as $h)
 <tr>

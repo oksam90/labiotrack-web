@@ -1,0 +1,78 @@
+<?php
+return [
+    'page_index_title'  => 'Déclarations',
+    'page_show_title'   => 'Déclaration',
+    'page_create_title' => 'Nouvelle déclaration',
+    'page_edit_title'   => 'Modifier Déclaration',
+    'header_index'      => 'Déclarations de déchets',
+    'subtitle_index'    => 'Suivi de la production par service',
+    'header_create'     => 'Déclarer des contenants pleins',
+    'subtitle_create'   => 'Processus simplifié — moins de 60 secondes',
+
+    'btn_new'           => 'Nouvelle déclaration',
+    'btn_save'          => 'Enregistrer la déclaration',
+    'btn_save_short'    => 'Enregistrer',
+    'btn_edit'          => 'Modifier',
+    'btn_back'          => 'Retour aux déclarations',
+    'btn_filter'        => 'Filtrer',
+
+    'filter_service'    => 'Service',
+    'filter_container'  => 'Contenant',
+    'filter_status'     => 'Statut',
+    'filter_from'       => 'Du',
+    'filter_to'         => 'Au',
+    'filter_all'        => 'Tous',
+
+    'status_en_stock'     => 'En stock',
+    'status_en_transport' => 'En transport',
+    'status_detruit'      => 'Détruit',
+
+    'col_date'           => 'Date',
+    'col_service'        => 'Service',
+    'col_container'      => 'Contenant',
+    'col_qty'            => 'Qté',
+    'col_weight_est'     => 'Poids est.',
+    'col_status'         => 'Statut',
+    'col_agent'          => 'Agent',
+    'col_actions'        => 'Actions',
+    'col_results'        => 'résultat(s)',
+
+    'empty_list'         => 'Aucune déclaration trouvée',
+
+    // Formulaire
+    'step_service'        => 'Service',
+    'step_container'      => 'Contenant',
+    'step_quantity'       => 'Quantité',
+    'form_service_label'  => 'Service producteur',
+    'form_container_type' => 'Type de contenant',
+    'form_container_full_count' => 'Nombre de contenants pleins',
+    'form_kg_per_unit'    => 'kg/u',
+    'form_notes'          => 'Notes (optionnel)',
+    'form_notes_ph'       => 'Observations particulières...',
+    'form_photo'          => 'Photo (optionnel)',
+    'form_photo_hint'     => 'Max 5 Mo — Permet de documenter visuellement les déchets',
+    'form_modify_title'   => 'Modifier la déclaration',
+    'form_required_star'  => '*',
+
+    // Résumé
+    'summary_title'       => 'Résumé automatique',
+    'summary_service'     => 'Service',
+    'summary_containers'  => 'Contenants',
+    'summary_weight'      => 'Poids estimé',
+    'summary_estimated'   => 'estimé',
+    'summary_timestamp'   => 'Horodatage automatique :',
+    'summary_qr_auto'     => 'QR Code généré automatiquement',
+
+    // Détail (show)
+    'show_service'           => 'Service',
+    'show_container'         => 'Contenant',
+    'show_qty'               => 'Quantité',
+    'show_weight_estimated'  => 'Poids estimé',
+    'show_weight_per_unit'   => 'Poids/contenant',
+    'show_datetime'          => 'Date & heure',
+    'show_agent'             => 'Agent',
+    'show_notes'             => 'Notes',
+    'show_qr_traceability'   => 'QR Code de traçabilité',
+    'show_automated'         => 'Automatisé :',
+    'show_automated_detail'  => 'Poids estimé calculé (:rate kg × :count) — QR code généré — Horodatage enregistré',
+];

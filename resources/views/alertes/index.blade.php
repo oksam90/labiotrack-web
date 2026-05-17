@@ -1,10 +1,10 @@
 @extends('layouts.app')
-@section('title','Alertes')
+@section('title', __('alertes.page_title'))
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
-    <h4 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-danger"></i>Centre d'alertes</h4>
+    <h4 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-danger"></i>{{ __('alertes.header') }}</h4>
     <form method="POST" action="{{ route('alertes.tout-lire') }}">@csrf
-        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-check-all me-1"></i>Tout marquer comme lu</button>
+        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-check-all me-1"></i>{{ __('alertes.btn_mark_all_read') }}</button>
     </form>
 </div>
 <div class="card">
@@ -25,13 +25,13 @@
         </div>
         @if(!$a->lu)
         <form method="POST" action="{{ route('alertes.lire', $a->id) }}" class="flex-shrink-0">@csrf
-            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="bi bi-check"></i></button>
+            <button type="submit" class="btn btn-sm btn-outline-secondary py-0 px-2" title="{{ __('alertes.btn_mark_read') }}"><i class="bi bi-check"></i></button>
         </form>
         @endif
     </div>
     @endforeach
     @if($alertes->isEmpty())
-    <div class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-2"></i><p class="mt-2">Aucune alerte — tout est en ordre !</p></div>
+    <div class="text-center py-5 text-muted"><i class="bi bi-check-circle-fill text-success fs-2"></i><p class="mt-2">{{ __('alertes.empty') }}</p></div>
     @endif
     <div class="card-footer">{{ $alertes->links() }}</div>
 </div>

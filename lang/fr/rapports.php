@@ -1,0 +1,64 @@
+<?php
+return [
+    'page_index_title'    => 'Rapports',
+    'page_financier_title' => 'Analyse Financière',
+    'header_index'        => 'Rapports générés',
+    'header_financier'    => 'Analyse Financière',
+    'subtitle_financier'  => 'Coûts de gestion des déchets — :month',
+
+    'btn_financial'       => 'Analyse financière',
+    'btn_generate'        => 'Générer un rapport',
+    'btn_back_to_reports' => 'Retour aux rapports',
+    'btn_pdf'             => 'PDF',
+    'btn_generate_pdf'    => 'Générer le PDF',
+
+    'col_type'            => 'Type',
+    'col_period'          => 'Période',
+    'col_generated_at'    => 'Généré le',
+    'col_actions'         => 'Actions',
+    'empty_list'          => 'Aucun rapport généré.',
+    'empty_hint'          => 'Cliquez sur « Générer un rapport » pour commencer.',
+
+    'type_mensuel'        => '📅 Mensuel',
+    'type_trimestriel'    => '📊 Trimestriel',
+    'type_annuel'         => '📆 Annuel',
+    'type_ad_hoc'         => '🔍 Ad hoc',
+    'type_ad_hoc_full'    => '🔍 Période personnalisée',
+
+    'modal_title'         => 'Générer un rapport',
+    'modal_structure'     => 'Structure concernée',
+    'modal_structure_ph'  => '— Sélectionner une structure —',
+    'modal_structure_hint' => 'Ou basculez vers une structure via le :link.',
+    'modal_link_dashboard' => 'dashboard réseau',
+    'modal_type'          => 'Type de rapport',
+    'modal_date_start'    => 'Date début',
+    'modal_date_end'      => 'Date fin',
+
+    // Financier
+    'kpi_total_cost'      => 'Coût total du mois',
+    'kpi_overcost'        => 'Surcoût estimé (mauvais tri)',
+    'kpi_saving'          => 'Économie potentielle',
+    'kpi_optimized_cost'  => 'Coût optimisé estimé',
+
+    'card_cost_by_container' => 'Coûts par type de contenant',
+    'card_yellow_vs_black' => 'Répartition Sacs Jaunes / Noirs',
+    'card_cost_by_service' => 'Coûts par service — Top consommateurs',
+    'card_recommendations' => "Recommandations d'optimisation",
+
+    'col_container_type'  => 'Type de contenant',
+    'col_qty'             => 'Qté',
+    'col_unit_price'      => 'P.U.',
+    'col_total_cost'      => 'Coût total',
+    'col_total'           => 'Total',
+    'no_decl_month'       => 'Aucune déclaration ce mois',
+    'no_data_available'   => 'Aucune donnée disponible',
+    'legend_yellow'       => 'Sacs jaunes (DASRI)',
+    'legend_black'        => 'Sacs noirs (ménagers)',
+
+    'reco1_title'         => 'Améliorer le tri à la source',
+    'reco1_desc'          => 'Réduire le volume de sacs jaunes par une meilleure formation du personnel soignant. Économie estimée : :amount/mois.',
+    'reco2_title'         => 'Cibler les services prioritaires',
+    'reco2_desc'          => 'Concentrer les actions sur les services à coûts élevés pour un impact maximal sur la réduction des déchets.',
+    'reco3_title'         => 'Checklists régulières',
+    'reco3_desc'          => 'Maintenir un score de conformité ≥ 80 % via des contrôles hebdomadaires pour éviter les amendes réglementaires.',
+];

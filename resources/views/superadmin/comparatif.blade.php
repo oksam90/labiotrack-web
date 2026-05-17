@@ -1,34 +1,42 @@
 @extends('layouts.app')
-@section('title','Analyse comparative inter-structures')
+@section('title', __('superadmin.page_comparatif_title'))
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-success"></i>Analyse comparative</h4>
-        <small class="text-muted">{{ \Carbon\Carbon::createFromFormat('Y-m',$mois)->translatedFormat('F Y') }} — Toutes structures</small>
+        <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-success"></i>{{ __('superadmin.header_comparatif') }}</h4>
+        <small class="text-muted">{{ __('superadmin.subtitle_comparatif', ['month' => \Carbon\Carbon::createFromFormat('Y-m',$mois)->locale(app()->getLocale())->translatedFormat('F Y')]) }}</small>
     </div>
-    <a href="{{ route('superadmin.index') }}" class="btn btn-sm btn-outline-secondary">← Retour</a>
+    <a href="{{ route('superadmin.index') }}" class="btn btn-sm btn-outline-secondary">{{ __('superadmin.btn_back') }}</a>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-bar-chart me-2 text-success"></i>Production de déchets (kg)</div>
-            <div class="card-body"><canvas id="chartPoids" height="200"></canvas></div>
+            <div class="card-header"><i class="bi bi-bar-chart me-2 text-success"></i>{{ __('superadmin.card_production') }}</div>
+            <div class="card-body"><canvas id="chartPoids" height="200"
+                data-label-weight="{{ __('superadmin.chart_label_weight') }}"></canvas></div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-shield-check me-2 text-success"></i>Score de conformité (%)</div>
-            <div class="card-body"><canvas id="chartScore" height="200"></canvas></div>
+            <div class="card-header"><i class="bi bi-shield-check me-2 text-success"></i>{{ __('superadmin.card_score_compliance') }}</div>
+            <div class="card-body"><canvas id="chartScore" height="200"
+                data-label-score="{{ __('superadmin.chart_label_score') }}"></canvas></div>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header"><i class="bi bi-currency-dollar me-2 text-warning"></i>Coûts estimés par structure</div>
+    <div class="card-header"><i class="bi bi-currency-dollar me-2 text-warning"></i>{{ __('superadmin.card_costs_by_struct') }}</div>
     <div class="table-responsive">
         <table class="table mb-0">
-            <thead><tr><th>Structure</th><th>Type</th><th class="text-end">Poids (kg)</th><th class="text-end">Coût estimé</th><th>Score conformité</th></tr></thead>
+            <thead><tr>
+                <th>{{ __('superadmin.col_struct') }}</th>
+                <th>{{ __('superadmin.col_type') }}</th>
+                <th class="text-end">{{ __('superadmin.col_weight') }}</th>
+                <th class="text-end">{{ __('superadmin.col_cost_estimate') }}</th>
+                <th>{{ __('superadmin.col_score_compliance') }}</th>
+            </tr></thead>
             <tbody>
                 @php $maxPoids = $etabs->max('poids') ?: 1; @endphp
                 @foreach($etabs as $e)
@@ -68,13 +76,17 @@ const poids  = @json($etabs->pluck('poids'));
 const scores = @json($etabs->pluck('score')->map(fn($s) => round($s)));
 const colors = ['#1B6B3A','#2E8B57','#D4A017','#2980B9','#8e44ad','#E67E22'];
 
-new Chart(document.getElementById('chartPoids'),{
-    type:'bar',data:{labels,datasets:[{label:'Poids (kg)',data:poids,backgroundColor:colors,borderRadius:6}]},
+const chartPoids = document.getElementById('chartPoids');
+new Chart(chartPoids, {
+    type:'bar',
+    data:{labels,datasets:[{label:chartPoids.dataset.labelWeight,data:poids,backgroundColor:colors,borderRadius:6}]},
     options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true},x:{grid:{display:false}}}}
 });
-new Chart(document.getElementById('chartScore'),{
+
+const chartScore = document.getElementById('chartScore');
+new Chart(chartScore, {
     type:'radar',
-    data:{labels,datasets:[{label:'Score (%)',data:scores,
+    data:{labels,datasets:[{label:chartScore.dataset.labelScore,data:scores,
         backgroundColor:'rgba(27,107,58,.15)',borderColor:'#1B6B3A',pointBackgroundColor:'#1B6B3A',borderWidth:2}]},
     options:{responsive:true,scales:{r:{beginAtZero:true,max:100,ticks:{stepSize:20}}}}
 });

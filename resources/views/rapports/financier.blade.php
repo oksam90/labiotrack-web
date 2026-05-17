@@ -1,14 +1,14 @@
 @extends('layouts.app')
-@section('title','Analyse Financière')
+@section('title', __('rapports.page_financier_title'))
 @section('content')
 
 <div class="page-header d-flex align-items-center justify-content-between">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-currency-dollar me-2 text-success"></i>Analyse Financière</h4>
-        <small class="text-muted">Coûts de gestion des déchets — {{ \Carbon\Carbon::createFromFormat('Y-m', $mois)->translatedFormat('F Y') }}</small>
+        <h4 class="fw-bold mb-0"><i class="bi bi-currency-dollar me-2 text-success"></i>{{ __('rapports.header_financier') }}</h4>
+        <small class="text-muted">{{ __('rapports.subtitle_financier', ['month' => \Carbon\Carbon::createFromFormat('Y-m', $mois)->locale(app()->getLocale())->translatedFormat('F Y')]) }}</small>
     </div>
     <a href="{{ route('rapports.index') }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Retour aux rapports
+        <i class="bi bi-arrow-left me-1"></i>{{ __('rapports.btn_back_to_reports') }}
     </a>
 </div>
 
@@ -20,7 +20,7 @@
                 <div class="icon" style="background:#d1fae5;"><i class="bi bi-cash-stack text-success fs-4"></i></div>
                 <div>
                     <div class="value">{{ number_format($coutParContenant->sum('cout_total'), 0, ',', ' ') }} F</div>
-                    <div class="label">Coût total du mois</div>
+                    <div class="label">{{ __('rapports.kpi_total_cost') }}</div>
                 </div>
             </div>
         </div>
@@ -31,7 +31,7 @@
                 <div class="icon" style="background:#fef9c3;"><i class="bi bi-exclamation-triangle text-warning fs-4"></i></div>
                 <div>
                     <div class="value">{{ number_format($surcoutEstime, 0, ',', ' ') }} F</div>
-                    <div class="label">Surcoût estimé (mauvais tri)</div>
+                    <div class="label">{{ __('rapports.kpi_overcost') }}</div>
                 </div>
             </div>
         </div>
@@ -42,7 +42,7 @@
                 <div class="icon" style="background:#dcfce7;"><i class="bi bi-piggy-bank text-success fs-4"></i></div>
                 <div>
                     <div class="value">{{ number_format($economie, 0, ',', ' ') }} F</div>
-                    <div class="label">Économie potentielle</div>
+                    <div class="label">{{ __('rapports.kpi_saving') }}</div>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
                 <div class="icon" style="background:#ede9fe;"><i class="bi bi-recycle text-purple fs-4"></i></div>
                 <div>
                     <div class="value">{{ number_format($coutOptimise, 0, ',', ' ') }} F</div>
-                    <div class="label">Coût optimisé estimé</div>
+                    <div class="label">{{ __('rapports.kpi_optimized_cost') }}</div>
                 </div>
             </div>
         </div>
@@ -65,22 +65,22 @@
     <div class="col-md-7">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-box me-2 text-success"></i>Coûts par type de contenant
+                <i class="bi bi-box me-2 text-success"></i>{{ __('rapports.card_cost_by_container') }}
             </div>
             <div class="card-body p-0">
                 @if($coutParContenant->isEmpty())
                     <div class="text-center py-5 text-muted">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>Aucune déclaration ce mois
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>{{ __('rapports.no_decl_month') }}
                     </div>
                 @else
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>Type de contenant</th>
-                                <th class="text-end">Qté</th>
-                                <th class="text-end">P.U.</th>
-                                <th class="text-end">Coût total</th>
+                                <th>{{ __('rapports.col_container_type') }}</th>
+                                <th class="text-end">{{ __('rapports.col_qty') }}</th>
+                                <th class="text-end">{{ __('rapports.col_unit_price') }}</th>
+                                <th class="text-end">{{ __('rapports.col_total_cost') }}</th>
                                 <th class="text-end">%</th>
                             </tr>
                         </thead>
@@ -106,7 +106,7 @@
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <th colspan="3">Total</th>
+                                <th colspan="3">{{ __('rapports.col_total') }}</th>
                                 <th class="text-end text-success">{{ number_format($total, 0, ',', ' ') }} F</th>
                                 <th></th>
                             </tr>
@@ -122,17 +122,20 @@
     <div class="col-md-5">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-pie-chart me-2 text-success"></i>Répartition Sacs Jaunes / Noirs
+                <i class="bi bi-pie-chart me-2 text-success"></i>{{ __('rapports.card_yellow_vs_black') }}
             </div>
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <div class="card-body d-flex flex-column align-items-center justify-content-center"
+                 data-yellow-label="{{ __('rapports.legend_yellow') }}"
+                 data-black-label="{{ __('rapports.legend_black') }}"
+                 id="sacWrapper">
                 <canvas id="sacChart" style="max-height:220px;"></canvas>
                 <div class="mt-3 w-100">
                     <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
-                        <span><span class="badge" style="background:#D4A017;">&nbsp;</span> Sacs jaunes (DASRI)</span>
+                        <span><span class="badge" style="background:#D4A017;">&nbsp;</span> {{ __('rapports.legend_yellow') }}</span>
                         <strong>{{ number_format($sacJaune, 0, ',', ' ') }} F</strong>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <span><span class="badge bg-secondary">&nbsp;</span> Sacs noirs (ménagers)</span>
+                        <span><span class="badge bg-secondary">&nbsp;</span> {{ __('rapports.legend_black') }}</span>
                         <strong>{{ number_format($sacNoir, 0, ',', ' ') }} F</strong>
                     </div>
                 </div>
@@ -144,12 +147,12 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-diagram-3 me-2 text-success"></i>Coûts par service — Top consommateurs
+                <i class="bi bi-diagram-3 me-2 text-success"></i>{{ __('rapports.card_cost_by_service') }}
             </div>
             <div class="card-body">
                 @if($coutParService->isEmpty())
                     <div class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>Aucune donnée disponible
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>{{ __('rapports.no_data_available') }}
                     </div>
                 @else
                 @php $maxService = $coutParService->max('cout_total'); @endphp
@@ -183,7 +186,7 @@
     <div class="col-12">
         <div class="card border-warning">
             <div class="card-header" style="background:#fffbeb;border-color:#fde68a;">
-                <i class="bi bi-lightbulb me-2 text-warning"></i>Recommandations d'optimisation
+                <i class="bi bi-lightbulb me-2 text-warning"></i>{{ __('rapports.card_recommendations') }}
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -191,8 +194,8 @@
                         <div class="d-flex gap-2">
                             <i class="bi bi-1-circle-fill text-success mt-1 flex-shrink-0"></i>
                             <div>
-                                <div class="fw-semibold" style="font-size:.9rem;">Améliorer le tri à la source</div>
-                                <small class="text-muted">Réduire le volume de sacs jaunes par une meilleure formation du personnel soignant. Économie estimée : <strong class="text-success">{{ number_format($economie, 0, ',', ' ') }} F/mois</strong>.</small>
+                                <div class="fw-semibold" style="font-size:.9rem;">{{ __('rapports.reco1_title') }}</div>
+                                <small class="text-muted">{{ __('rapports.reco1_desc', ['amount' => number_format($economie, 0, ',', ' ') . ' F']) }}</small>
                             </div>
                         </div>
                     </div>
@@ -200,8 +203,8 @@
                         <div class="d-flex gap-2">
                             <i class="bi bi-2-circle-fill text-success mt-1 flex-shrink-0"></i>
                             <div>
-                                <div class="fw-semibold" style="font-size:.9rem;">Cibler les services prioritaires</div>
-                                <small class="text-muted">Concentrer les actions sur les services à coûts élevés pour un impact maximal sur la réduction des déchets.</small>
+                                <div class="fw-semibold" style="font-size:.9rem;">{{ __('rapports.reco2_title') }}</div>
+                                <small class="text-muted">{{ __('rapports.reco2_desc') }}</small>
                             </div>
                         </div>
                     </div>
@@ -209,8 +212,8 @@
                         <div class="d-flex gap-2">
                             <i class="bi bi-3-circle-fill text-success mt-1 flex-shrink-0"></i>
                             <div>
-                                <div class="fw-semibold" style="font-size:.9rem;">Checklists régulières</div>
-                                <small class="text-muted">Maintenir un score de conformité &ge;80% via des contrôles hebdomadaires pour éviter les amendes réglementaires.</small>
+                                <div class="fw-semibold" style="font-size:.9rem;">{{ __('rapports.reco3_title') }}</div>
+                                <small class="text-muted">{{ __('rapports.reco3_desc') }}</small>
                             </div>
                         </div>
                     </div>
@@ -224,11 +227,12 @@
 @push('scripts')
 <script>
 const ctx = document.getElementById('sacChart');
+const wrapper = document.getElementById('sacWrapper');
 if(ctx) {
     new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Sacs jaunes (DASRI)', 'Sacs noirs (ménagers)'],
+            labels: [wrapper.dataset.yellowLabel, wrapper.dataset.blackLabel],
             datasets: [{
                 data: [{{ $sacJaune }}, {{ $sacNoir }}],
                 backgroundColor: ['#D4A017', '#6b7280'],
@@ -242,7 +246,7 @@ if(ctx) {
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: ctx => ' ' + new Intl.NumberFormat('fr-FR').format(ctx.raw) + ' F'
+                        label: ctx => ' ' + new Intl.NumberFormat(document.documentElement.lang || 'fr-FR').format(ctx.raw) + ' F'
                     }
                 }
             },

@@ -1,12 +1,12 @@
 @extends('layouts.app')
-@section('title','Checklist Conformité')
+@section('title', __('checklists.page_index_title'))
 @section('content')
 <div class="page-header d-flex justify-content-between align-items-center">
     <div>
-        <h4 class="fw-bold mb-0"><i class="bi bi-check2-square me-2 text-success"></i>Checklists de conformité</h4>
-        <small class="text-muted">Évaluation des pratiques de tri et de sécurité</small>
+        <h4 class="fw-bold mb-0"><i class="bi bi-check2-square me-2 text-success"></i>{{ __('checklists.header_index') }}</h4>
+        <small class="text-muted">{{ __('checklists.subtitle_index') }}</small>
     </div>
-    <a href="{{ route('checklists.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>Nouvelle checklist</a>
+    <a href="{{ route('checklists.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>{{ __('checklists.btn_new') }}</a>
 </div>
 
 <!-- Score moyen -->
@@ -14,7 +14,7 @@
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="stat-card text-center">
-            <div class="mb-2" style="font-size:.85rem;color:#6b7280;font-weight:600;">Score conformité moyen (ce mois)</div>
+            <div class="mb-2" style="font-size:.85rem;color:#6b7280;font-weight:600;">{{ __('checklists.kpi_score') }}</div>
             <div style="font-size:3rem;font-weight:800;color:{{ $scoresMoyen >= 80 ? '#1B6B3A' : ($scoresMoyen >= 60 ? '#D4A017' : '#C0392B') }};">
                 {{ number_format($scoresMoyen, 0) }}%
             </div>
@@ -30,7 +30,17 @@
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <thead>
-                <tr><th>Date</th><th>Service</th><th>Agent</th><th>Boîtes 3/4</th><th>Étiquetage</th><th>Local ventilé</th><th>EPI</th><th>Score</th><th></th></tr>
+                <tr>
+                    <th>{{ __('checklists.col_date') }}</th>
+                    <th>{{ __('checklists.col_service') }}</th>
+                    <th>{{ __('checklists.col_agent') }}</th>
+                    <th>{{ __('checklists.col_boxes') }}</th>
+                    <th>{{ __('checklists.col_labels') }}</th>
+                    <th>{{ __('checklists.col_ventilated') }}</th>
+                    <th>{{ __('checklists.col_epi') }}</th>
+                    <th>{{ __('checklists.col_score') }}</th>
+                    <th></th>
+                </tr>
             </thead>
             <tbody>
                 @foreach($checklists as $cl)
@@ -54,7 +64,7 @@
                 </tr>
                 @endforeach
                 @if($checklists->isEmpty())
-                <tr><td colspan="9" class="text-center text-muted py-4">Aucune checklist enregistrée</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-4">{{ __('checklists.empty_list') }}</td></tr>
                 @endif
             </tbody>
         </table>

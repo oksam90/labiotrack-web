@@ -20,9 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
         // comme alias. Il est déjà appliqué via Route::middleware(['auth','tenant'])
         // dans web.php, ce qui est l'endroit correct (après auth).
 
+        // SetLocaleMiddleware doit s'exécuter sur TOUTES les requêtes web
+        // (y compris /login, /locale/{lang}) APRÈS la session pour pouvoir
+        // lire/écrire la locale dans la session et auth()->user(). On le
+        // place donc dans le group 'web' (ajouté après StartSession).
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocaleMiddleware::class,
+        ]);
+
         $middleware->alias([
             'role'   => \App\Http\Middleware\RoleMiddleware::class,
             'tenant' => \App\Http\Middleware\EnsureTenantMiddleware::class,
+            'locale' => \App\Http\Middleware\SetLocaleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
@@ -45,6 +54,6 @@ return Application::configure(basePath: dirname(__DIR__))
             return redirect()
                 ->route('login')
                 ->withInput($request->except(['password', '_token']))
-                ->with('warning', 'Votre session a expiré pour des raisons de sécurité. Veuillez vous reconnecter.');
+                ->with('warning', __('auth_ui.session_expired'));
         });
     })->create();

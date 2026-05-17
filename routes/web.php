@@ -15,12 +15,16 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ReseauController;
 use App\Http\Controllers\SignatureController;
+use App\Http\Controllers\LocaleController;
 
 // ─── AUTH ──────────────────────────────────────────────────────────────────
 Route::get('/', fn() => redirect('/login'));
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout',[AuthController::class, 'logout'])->name('logout');
+
+// ─── I18N — sélecteur de langue (accessible avant authentification) ────────
+Route::post('/locale/{lang}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 // ─── ROUTES AUTHENTIFIÉES ──────────────────────────────────────────────────
 Route::middleware(['auth', 'tenant'])->group(function () {

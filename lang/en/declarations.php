@@ -1,0 +1,78 @@
+<?php
+return [
+    'page_index_title'  => 'Declarations',
+    'page_show_title'   => 'Declaration',
+    'page_create_title' => 'New declaration',
+    'page_edit_title'   => 'Edit Declaration',
+    'header_index'      => 'Waste declarations',
+    'subtitle_index'    => 'Production tracking by service',
+    'header_create'     => 'Declare full containers',
+    'subtitle_create'   => 'Simplified process — less than 60 seconds',
+
+    'btn_new'           => 'New declaration',
+    'btn_save'          => 'Save declaration',
+    'btn_save_short'    => 'Save',
+    'btn_edit'          => 'Edit',
+    'btn_back'          => 'Back to declarations',
+    'btn_filter'        => 'Filter',
+
+    'filter_service'    => 'Service',
+    'filter_container'  => 'Container',
+    'filter_status'     => 'Status',
+    'filter_from'       => 'From',
+    'filter_to'         => 'To',
+    'filter_all'        => 'All',
+
+    'status_en_stock'     => 'In stock',
+    'status_en_transport' => 'In transit',
+    'status_detruit'      => 'Destroyed',
+
+    'col_date'           => 'Date',
+    'col_service'        => 'Service',
+    'col_container'      => 'Container',
+    'col_qty'            => 'Qty',
+    'col_weight_est'     => 'Est. weight',
+    'col_status'         => 'Status',
+    'col_agent'          => 'Agent',
+    'col_actions'        => 'Actions',
+    'col_results'        => 'result(s)',
+
+    'empty_list'         => 'No declarations found',
+
+    // Form
+    'step_service'        => 'Service',
+    'step_container'      => 'Container',
+    'step_quantity'       => 'Quantity',
+    'form_service_label'  => 'Producing service',
+    'form_container_type' => 'Container type',
+    'form_container_full_count' => 'Number of full containers',
+    'form_kg_per_unit'    => 'kg/unit',
+    'form_notes'          => 'Notes (optional)',
+    'form_notes_ph'       => 'Specific observations...',
+    'form_photo'          => 'Photo (optional)',
+    'form_photo_hint'     => 'Max 5 MB — visually document the waste',
+    'form_modify_title'   => 'Edit declaration',
+    'form_required_star'  => '*',
+
+    // Summary
+    'summary_title'       => 'Automatic summary',
+    'summary_service'     => 'Service',
+    'summary_containers'  => 'Containers',
+    'summary_weight'      => 'Estimated weight',
+    'summary_estimated'   => 'estimated',
+    'summary_timestamp'   => 'Automatic timestamp:',
+    'summary_qr_auto'     => 'QR Code automatically generated',
+
+    // Detail (show)
+    'show_service'           => 'Service',
+    'show_container'         => 'Container',
+    'show_qty'               => 'Quantity',
+    'show_weight_estimated'  => 'Estimated weight',
+    'show_weight_per_unit'   => 'Weight/container',
+    'show_datetime'          => 'Date & time',
+    'show_agent'             => 'Agent',
+    'show_notes'             => 'Notes',
+    'show_qr_traceability'   => 'Traceability QR Code',
+    'show_automated'         => 'Automated:',
+    'show_automated_detail'  => 'Estimated weight calculated (:rate kg × :count) — QR code generated — Timestamp recorded',
+];

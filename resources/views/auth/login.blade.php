@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion — LaBioTrack</title>
+    <title>{{ __('auth_ui.sign_in') }} — LaBioTrack</title>
     <link rel="icon" type="image/png" href="{{ asset('labiotrack-favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -28,7 +28,7 @@
         <div class="col-md-5">
             <div class="login-card">
                 <div class="text-center">
-                    <h5 class="fw-bold mb-1" style="color:#e5e9ef;">Connectez-vous à votre espace LaBioTrack</h5>
+                    <h5 class="fw-bold mb-1" style="color:#e5e9ef;">{{ __('auth_ui.login_title') }}</h5>
                 </div>
 
                 @if(session('warning'))
@@ -46,27 +46,27 @@
                 <form method="POST" action="{{ route('login.post') }}">
                     @csrf
                     <div class="mb-3">
-                        <label class="form-label fw-semibold" style="font-size:.85rem;">Adresse email</label>
+                        <label class="form-label fw-semibold" style="font-size:.85rem;">{{ __('auth_ui.email') }}</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope" style="color:#1B6B3A;"></i></span>
-                            <input type="email" name="email" class="form-control border-start-0 ps-0" placeholder="votre@email.sn" value="{{ old('email') }}" required autofocus style="border-left:none;">
+                            <input type="email" name="email" class="form-control border-start-0 ps-0" placeholder="{{ __('auth_ui.email_placeholder') }}" value="{{ old('email') }}" required autofocus style="border-left:none;">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold" style="font-size:.85rem;">Mot de passe</label>
+                        <label class="form-label fw-semibold" style="font-size:.85rem;">{{ __('auth_ui.password') }}</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock" style="color:#1B6B3A;"></i></span>
-                            <input type="password" name="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required>
+                            <input type="password" name="password" class="form-control border-start-0 ps-0" placeholder="{{ __('auth_ui.password_placeholder') }}" required>
                         </div>
                     </div>
                     <div class="mb-4 d-flex align-items-center justify-content-between">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="remember" id="remember">
-                            <label class="form-check-label" for="remember" style="font-size:.85rem;">Se souvenir de moi</label>
+                            <label class="form-check-label" for="remember" style="font-size:.85rem;">{{ __('auth_ui.remember_me') }}</label>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-login text-white">
-                        <i class="bi bi-box-arrow-in-right me-2"></i>Se connecter
+                        <i class="bi bi-box-arrow-in-right me-2"></i>{{ __('auth_ui.sign_in') }}
                     </button>
                 </form>
             </div>

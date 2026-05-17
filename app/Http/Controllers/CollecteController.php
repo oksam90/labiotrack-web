@@ -84,7 +84,7 @@ class CollecteController extends Controller
             : $user->etablissement_id;
 
         if (! $etabId) {
-            return back()->withErrors(['declarations' => 'Impossible de déterminer l\'établissement.']);
+            return back()->withErrors(['declarations' => __('collectes.cannot_determine_etab')]);
         }
 
         $collecteId = DB::table('collectes')->insertGetId([
@@ -114,7 +114,7 @@ class CollecteController extends Controller
         }
 
         return redirect()->route('collectes.show', $collecteId)
-            ->with('success', "Collecte créée — Bordereau n° {$numeroBordereau}");
+            ->with('success', __('collectes.created_success', ['ref' => $numeroBordereau]));
     }
 
     public function show($id)

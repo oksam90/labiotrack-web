@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Signature bordereau ' . $collecte->numero_bordereau)
+@section('title', __('signatures.page_sign_title') . ' ' . $collecte->numero_bordereau)
 
 @push('styles')
 <style>
@@ -53,19 +53,19 @@
 <div class="signature-container">
 
     <h2 class="mb-3">
-        <i class="bi bi-pen"></i> Signature du bordereau de collecte
+        <i class="bi bi-pen"></i> {{ __('signatures.header_sign') }}
     </h2>
 
     {{-- ── Résumé collecte (lecture seule) ─────────────────── --}}
     <div class="collecte-resume mb-3">
-        <p><strong>Bordereau :</strong> {{ $collecte->numero_bordereau }}</p>
-        <p><strong>Établissement :</strong> {{ $etablissement->nom ?? '—' }}</p>
-        <p><strong>Date collecte :</strong> {{ $collecte->date_collecte?->format('d/m/Y H:i') ?? '—' }}</p>
-        <p><strong>Agent collecteur :</strong>
+        <p><strong>{{ __('signatures.lbl_bordereau') }}</strong> {{ $collecte->numero_bordereau }}</p>
+        <p><strong>{{ __('signatures.lbl_etab') }}</strong> {{ $etablissement->nom ?? '—' }}</p>
+        <p><strong>{{ __('signatures.lbl_date_collecte') }}</strong> {{ $collecte->date_collecte?->format('d/m/Y H:i') ?? '—' }}</p>
+        <p><strong>{{ __('signatures.lbl_agent_collecteur') }}</strong>
             {{ $collecte->collecteur ? $collecte->collecteur->prenom . ' ' . $collecte->collecteur->nom : '—' }}
         </p>
-        <p><strong>Contenants :</strong> {{ $collecte->nombre_contenants }} —
-           <strong>Poids déclaré :</strong> {{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg</p>
+        <p><strong>{{ __('signatures.lbl_containers') }}</strong> {{ $collecte->nombre_contenants }} —
+           <strong>{{ __('signatures.lbl_weight_declared') }}</strong> {{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg</p>
     </div>
 
     @if($errors->any())
@@ -77,48 +77,47 @@
     @endif
 
     <form id="signature-form" method="POST"
-          action="{{ route('signatures.store', $collecte->id) }}">
+          action="{{ route('signatures.store', $collecte->id) }}"
+          data-msg-empty="{{ __('signatures.js_empty_signature') }}"
+          data-msg-legal="{{ __('signatures.js_confirm_legal') }}"
+          data-msg-submitting="{{ __('signatures.btn_submitting') }}">
         @csrf
 
         {{-- ── Zone de dessin ─────────────────────────────── --}}
-        <label class="form-label fw-bold mt-3">Signature du client</label>
+        <label class="form-label fw-bold mt-3">{{ __('signatures.canvas_label') }}</label>
         <div class="signature-pad-wrapper mb-2">
             <canvas id="signature-canvas"></canvas>
             <div id="sig-hint" class="sig-empty-hint">
-                <i class="bi bi-pencil-square me-2"></i> Dessinez votre signature ici
+                <i class="bi bi-pencil-square me-2"></i> {{ __('signatures.canvas_hint') }}
             </div>
         </div>
         <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="btn-clear">
-            <i class="bi bi-eraser"></i> Effacer
+            <i class="bi bi-eraser"></i> {{ __('signatures.btn_clear') }}
         </button>
 
         {{-- ── Identité signataire ────────────────────────── --}}
         <div class="row g-2 mb-3">
             <div class="col-md-6">
-                <label class="form-label">Nom complet du signataire *</label>
+                <label class="form-label">{{ __('signatures.form_signer_name') }}</label>
                 <input type="text" name="signataire_nom" class="form-control"
                        value="{{ trim($user->prenom . ' ' . $user->nom) }}"
-                       placeholder="Nom Prénom" required maxlength="255" />
+                       placeholder="{{ __('signatures.form_signer_name_ph') }}" required maxlength="255" />
             </div>
             <div class="col-md-6">
-                <label class="form-label">Fonction</label>
+                <label class="form-label">{{ __('signatures.form_signer_function') }}</label>
                 <input type="text" name="signataire_fonction" class="form-control"
-                       placeholder="Ex: Responsable QHSE" maxlength="255" />
+                       placeholder="{{ __('signatures.form_signer_function_ph') }}" maxlength="255" />
             </div>
         </div>
 
         {{-- ── Mention légale ─────────────────────────────── --}}
-        <label class="form-label">Mention légale *</label>
+        <label class="form-label">{{ __('signatures.form_legal_mention') }}</label>
         <textarea name="commentaire" class="form-control mb-2" rows="2"
-                  required maxlength="500">Lu et Approuvé</textarea>
+                  required maxlength="500">{{ __('signatures.form_legal_default') }}</textarea>
 
         <label class="checkbox-confirm mb-3">
             <input type="checkbox" id="chk-approve" required />
-            <span>
-                Je certifie avoir pris connaissance des informations de collecte
-                ci-dessus et confirme leur exactitude. Cette signature électronique
-                a la même valeur juridique qu'une signature manuscrite.
-            </span>
+            <span>{{ __('signatures.form_legal_checkbox') }}</span>
         </label>
 
         {{-- Hidden : payload signature + screen --}}
@@ -127,10 +126,10 @@
 
         <div class="d-flex gap-2">
             <a href="{{ route('collectes.show', $collecte->id) }}" class="btn btn-light">
-                <i class="bi bi-x"></i> Annuler
+                <i class="bi bi-x"></i> {{ __('signatures.btn_cancel') }}
             </a>
             <button type="submit" class="btn btn-success" id="btn-submit" disabled>
-                <i class="bi bi-check-circle"></i> Valider la signature
+                <i class="bi bi-check-circle"></i> {{ __('signatures.btn_submit') }}
             </button>
         </div>
     </form>
@@ -187,21 +186,23 @@
     }
 
     // Soumission : injecte image base64 + résolution écran
+    // Les messages d'erreur viennent des data-attributes du form pour
+    // suivre la locale active (i18n via __() côté Blade).
     form.addEventListener('submit', function (e) {
         if (pad.isEmpty()) {
             e.preventDefault();
-            alert('Veuillez dessiner votre signature.');
+            alert(form.dataset.msgEmpty || 'Please draw your signature.');
             return;
         }
         if (!chk.checked) {
             e.preventDefault();
-            alert('Veuillez confirmer la mention légale.');
+            alert(form.dataset.msgLegal || 'Please confirm the legal statement.');
             return;
         }
         fieldImage.value  = pad.toDataURL('image/png');
         fieldScreen.value = `${screen.width}x${screen.height}`;
         btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement…';
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + (form.dataset.msgSubmitting || 'Saving…');
     });
 })();
 </script>

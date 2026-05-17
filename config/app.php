@@ -78,11 +78,16 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // Locale par défaut : français. L'EN est disponible via le sélecteur
+    // utilisateur (colonne users.locale + session, géré par SetLocaleMiddleware).
+    'locale' => env('APP_LOCALE', 'fr'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'fr'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    // Locales supportées par l'interface (sélecteur de langue)
+    'supported_locales' => ['fr', 'en'],
+
+    'faker_locale' => env('APP_FAKER_LOCALE', 'fr_FR'),
 
     /*
     |--------------------------------------------------------------------------
