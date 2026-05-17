@@ -41,8 +41,11 @@ jobs:
             sudo docker exec -u root labiotrack-app chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/vendor
             sudo docker exec -u root labiotrack-app chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-            # ── 3. Installer ext-gd si manquant ──────
+            # ── 3a. Installer ext-gd si manquant ─────
             sudo docker exec -u root labiotrack-app bash -c "php -m | grep -q gd || (apt-get update && apt-get install -y libpng-dev libjpeg-dev libfreetype6-dev && docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install gd)"
+
+            # ── 3b. Installer ext-bcmath si manquant (requis par dragon-code/support → laravel-lang/lang) ──
+            sudo docker exec -u root labiotrack-app bash -c "php -m | grep -q bcmath || docker-php-ext-install bcmath"
 
             # ── 4. Composer install ──────────────────
             sudo docker exec labiotrack-app composer install --no-dev --optimize-autoloader --no-interaction
