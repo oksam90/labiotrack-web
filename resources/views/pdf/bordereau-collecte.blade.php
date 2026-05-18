@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
-<title>Bordereau signé {{ $collecte->numero_bordereau }}</title>
+<title>{{ __('signatures.pdf_title', ['ref' => $collecte->numero_bordereau]) }}</title>
 <style>
     body{font-family:Arial,sans-serif;font-size:10pt;color:#1A2332;padding:15mm;}
     h1{color:#1B6B3A;border-bottom:3px solid #1B6B3A;padding-bottom:10px;font-size:16pt;margin-top:0;}
@@ -26,26 +26,26 @@
 </head>
 <body>
 
-<h1>📋 Bordereau de Collecte — Signé électroniquement</h1>
+<h1>📋 {{ __('signatures.pdf_h1') }}</h1>
 
 <div class="grid">
-    <div class="field"><label>Établissement</label>{{ $etablissement->nom ?? '—' }}</div>
-    <div class="field"><label>Bordereau N°</label><strong>{{ $collecte->numero_bordereau }}</strong></div>
-    <div class="field"><label>Date de collecte</label>{{ \Carbon\Carbon::parse($collecte->date_collecte)->format('d/m/Y H:i') }}</div>
-    <div class="field"><label>Véhicule</label>{{ $collecte->vehicule ?? 'N/A' }}</div>
-    <div class="field"><label>Contenants totaux</label><strong>{{ $collecte->nombre_contenants }}</strong></div>
-    <div class="field"><label>Poids total déclaré</label><strong>{{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg</strong></div>
+    <div class="field"><label>{{ __('pdf.field_etab') }}</label>{{ $etablissement->nom ?? '—' }}</div>
+    <div class="field"><label>{{ __('pdf.field_bordereau') }}</label><strong>{{ $collecte->numero_bordereau }}</strong></div>
+    <div class="field"><label>{{ __('pdf.field_date') }}</label>{{ \Carbon\Carbon::parse($collecte->date_collecte)->format('d/m/Y H:i') }}</div>
+    <div class="field"><label>{{ __('pdf.field_vehicle') }}</label>{{ $collecte->vehicule ?? 'N/A' }}</div>
+    <div class="field"><label>{{ __('pdf.field_containers') }}</label><strong>{{ $collecte->nombre_contenants }}</strong></div>
+    <div class="field"><label>{{ __('pdf.field_weight') }}</label><strong>{{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg</strong></div>
 </div>
 
-<h3 style="color:#1B6B3A;margin-top:20px;font-size:11pt;">Détail des déchets collectés</h3>
+<h3 style="color:#1B6B3A;margin-top:20px;font-size:11pt;">{{ __('signatures.pdf_table_detail') }}</h3>
 <table>
 <thead>
     <tr>
-        <th>#</th>
-        <th>Service</th>
-        <th>Type contenant</th>
-        <th>Quantité</th>
-        <th>Poids estimé</th>
+        <th>{{ __('pdf.col_index') }}</th>
+        <th>{{ __('pdf.col_service') }}</th>
+        <th>{{ __('pdf.col_container_type') }}</th>
+        <th>{{ __('pdf.col_qty') }}</th>
+        <th>{{ __('pdf.col_weight_est') }}</th>
     </tr>
 </thead>
 <tbody>
@@ -61,7 +61,7 @@
 </tbody>
 <tfoot>
     <tr>
-        <td colspan="3">TOTAL</td>
+        <td colspan="3">{{ __('pdf.col_total') }}</td>
         <td>{{ $declarations->sum('nombre_contenants') }}</td>
         <td>{{ number_format($declarations->sum('poids_estime_kg'), 2) }} kg</td>
     </tr>
@@ -70,7 +70,7 @@
 
 {{-- ── Bloc signature électronique ────────────────────────── --}}
 <div class="sig-block">
-    <div class="head">✍ Signature électronique du client</div>
+    <div class="head">{{ __('signatures.pdf_sig_block_head') }}</div>
     <div class="sig-image">
         <img src="{{ $signatureImg }}" alt="Signature" />
     </div>
@@ -78,26 +78,26 @@
     <div class="mention">« {{ $signature->commentaire }} »</div>
 
     <div class="sig-meta">
-        <strong>Signataire :</strong> {{ $signature->signataire_nom }}
+        <strong>{{ __('signatures.pdf_field_signer') }}</strong> {{ $signature->signataire_nom }}
         @if($signature->signataire_fonction) — {{ $signature->signataire_fonction }} @endif
         <br>
-        <strong>Date et heure :</strong>
-        {{ $signature->signed_at?->format('d/m/Y à H:i:s') }} (UTC{{ $signature->signed_at?->format('P') }})
+        <strong>{{ __('signatures.pdf_field_datetime') }}</strong>
+        {{ $signature->signed_at?->format('d/m/Y H:i:s') }} (UTC{{ $signature->signed_at?->format('P') }})
         <br>
-        <strong>Adresse IP :</strong> {{ $signature->ip_address }}
+        <strong>{{ __('signatures.pdf_field_ip') }}</strong> {{ $signature->ip_address }}
         @php $info = $signature->device_info ?? []; @endphp
         @if(!empty($info['os']) || !empty($info['browser']))
-            <br><strong>Appareil :</strong>
+            <br><strong>{{ __('signatures.pdf_field_device') }}</strong>
             {{ $info['os'] ?? '' }} {{ !empty($info['browser']) ? '— '.$info['browser'] : '' }}
         @endif
     </div>
 </div>
 
 <div class="footer">
-    Bordereau signé électroniquement — généré le {{ now()->format('d/m/Y à H:i') }} — LaBioTrack
+    {{ __('signatures.pdf_footer_label', ['date' => now()->format('d/m/Y H:i')]) }}
     <br>
     <span class="integrity">
-        Hash d'intégrité (SHA-256) : {{ $signature->signature_hash }}
+        {{ __('signatures.pdf_integrity_label') }} {{ $signature->signature_hash }}
     </span>
 </div>
 

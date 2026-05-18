@@ -101,6 +101,18 @@ return [
     'btn_revoke'            => 'Revoke',
     'confirm_revoke'        => 'Confirm revocation?',
 
+    // ── Signed PDF ─────────────────────────────────────────────
+    'pdf_title'             => 'Signed manifest :ref',
+    'pdf_h1'                => 'Collection manifest — Electronically signed',
+    'pdf_table_detail'      => 'Collected waste details',
+    'pdf_sig_block_head'    => '✍ Client electronic signature',
+    'pdf_field_signer'      => 'Signer:',
+    'pdf_field_datetime'    => 'Date and time:',
+    'pdf_field_ip'          => 'IP address:',
+    'pdf_field_device'      => 'Device:',
+    'pdf_footer_label'      => 'Manifest electronically signed — generated on :date — LaBioTrack',
+    'pdf_integrity_label'   => 'Integrity hash (SHA-256):',
+
     // ── Flash messages ─────────────────────────────────────────
     'created_success'       => 'Signature saved. The PDF is being generated.',
     'created_async_pending' => 'Signature saved successfully.',

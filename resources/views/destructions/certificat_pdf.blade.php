@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
 <meta charset="UTF-8">
 <style>
@@ -48,42 +48,51 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
 </style>
 </head>
 <body>
+@php
+    $methodKey = match($destruction->methode){
+        'incineration'=>'incineration',
+        'autoclave'=>'autoclave',
+        'desinfection_chimique'=>'desinfection',
+        'autre'=>'other',
+        default=>'other',
+    };
+@endphp
 <div class="page">
 
     {{-- ══ EN-TÊTE SOCIÉTÉ ══ --}}
     <div class="entete-societe clearfix">
         <div class="logo-area">🧬</div>
         <div class="societe-info">
-            <strong>{{ strtoupper($etablissement->nom ?? 'ÉTABLISSEMENT') }}</strong><br>
+            <strong>{{ strtoupper($etablissement->nom ?? __('pdf.establishment_fallback')) }}</strong><br>
             {{ $etablissement->adresse ?? '' }}{{ $etablissement->ville ? ', '.$etablissement->ville : '' }}<br>
-            @if($etablissement->telephone ?? null) Tél : {{ $etablissement->telephone }}<br>@endif
-            @if($etablissement->email ?? null) Email : {{ $etablissement->email }}<br>@endif
+            @if($etablissement->telephone ?? null) {{ __('destructions.cert_field_phone') }} : {{ $etablissement->telephone }}<br>@endif
+            @if($etablissement->email ?? null) {{ __('destructions.cert_field_email') }} : {{ $etablissement->email }}<br>@endif
         </div>
     </div>
 
     {{-- ══ TITRE ══ --}}
-    <div class="titre-bordereau">Bordereau de destruction des déchets</div>
-    <div class="sous-titre">— À REMPLIR PAR L'ÉMETTEUR DU BORDEREAU —</div>
+    <div class="titre-bordereau">{{ __('destructions.cert_title') }}</div>
+    <div class="sous-titre">{{ __('destructions.cert_subtitle_emitter') }}</div>
 
-    <div class="num-bordereau">Bordereau n° {{ $certificatNum }}</div>
+    <div class="num-bordereau">{{ __('destructions.cert_num_label') }} {{ $certificatNum }}</div>
 
     {{-- ══ SECTION ÉMETTEUR ══ --}}
     <table class="grid">
         <tr>
             <td style="width:50%">
-                <span class="cell-title">1. Émetteur du bordereau :</span><br>
-                Opérateur de gestion des déchets biomédicaux<br><br>
-                Nom : <strong>{{ $etablissement->nom ?? '—' }}</strong><br>
-                Adresse : {{ $etablissement->adresse ?? '—' }}<br>
-                Ville : {{ $etablissement->ville ?? '—' }}<br>
-                Tél : {{ $etablissement->telephone ?? '—' }}<br>
-                Email : {{ $etablissement->email ?? '—' }}
+                <span class="cell-title">{{ __('destructions.cert_section_emitter') }}</span><br>
+                {{ __('destructions.cert_section_emitter_sub') }}<br><br>
+                {{ __('destructions.cert_field_name') }} : <strong>{{ $etablissement->nom ?? '—' }}</strong><br>
+                {{ __('destructions.cert_field_address') }} : {{ $etablissement->adresse ?? '—' }}<br>
+                {{ __('destructions.cert_field_city') }} : {{ $etablissement->ville ?? '—' }}<br>
+                {{ __('destructions.cert_field_phone') }} : {{ $etablissement->telephone ?? '—' }}<br>
+                {{ __('destructions.cert_field_email') }} : {{ $etablissement->email ?? '—' }}
             </td>
             <td style="width:50%">
-                <span class="cell-title">2. Installation de destination :</span><br><br>
-                Nom : {{ $destruction->site_traitement ?? 'Unité de Traitement' }}<br>
-                Adresse : —<br>
-                Personne à contacter : {{ isset($prestataire) ? ($prestataire->prenom.' '.$prestataire->nom) : '—' }}
+                <span class="cell-title">{{ __('destructions.cert_section_dest') }}</span><br><br>
+                {{ __('destructions.cert_field_name') }} : {{ $destruction->site_traitement ?? '—' }}<br>
+                {{ __('destructions.cert_field_address') }} : —<br>
+                {{ __('destructions.cert_field_contact') }} : {{ isset($prestataire) ? ($prestataire->prenom.' '.$prestataire->nom) : '—' }}
             </td>
         </tr>
     </table>
@@ -92,9 +101,9 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     <table class="grid">
         <tr>
             <td>
-                <span class="cell-title">3. Dénomination du déchet :</span><br>
-                Rubrique déchet : Déchets d'Activités de Soins à Risques Infectieux (DASRI)<br>
-                <strong>Déchets solides</strong> / liquides / gazeux (rayez les mentions inutiles).
+                <span class="cell-title">{{ __('destructions.cert_section_waste') }}</span><br>
+                {{ __('destructions.cert_waste_rubric') }}<br>
+                <strong>{{ __('destructions.cert_waste_form') }}</strong>
             </td>
         </tr>
     </table>
@@ -103,8 +112,8 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     <table class="grid">
         <tr>
             <td>
-                <span class="cell-title">4. Conditionnement :</span><br>
-                Type : GRV / Fût / <strong>Cartons / Sacs</strong> / Autre (préciser) : ____________
+                <span class="cell-title">{{ __('destructions.cert_section_packaging') }}</span><br>
+                {{ __('destructions.cert_packaging_type') }}
             </td>
         </tr>
     </table>
@@ -113,24 +122,17 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     <table class="grid">
         <tr>
             <td style="width:50%">
-                <span class="cell-title">5. Quantité :</span><br><br>
-                Quantité réelle (ou estimée) :<br>
-                <strong>{{ number_format($destruction->poids_reel_kg, 2) }} kg</strong> de déchets biomédicaux<br><br>
-                Poids déclaré (collecte) : {{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg<br>
-                Bordereau collecte : <strong>{{ $collecte->numero_bordereau ?? '—' }}</strong>
+                <span class="cell-title">{{ __('destructions.cert_section_qty') }}</span><br><br>
+                {{ __('destructions.cert_qty_real') }}<br>
+                <strong>{{ number_format($destruction->poids_reel_kg, 2) }} kg</strong><br><br>
+                {{ __('destructions.cert_qty_declared') }} {{ number_format($collecte->poids_declare_kg ?? 0, 2) }} kg<br>
+                {{ __('destructions.cert_qty_bordereau') }} <strong>{{ $collecte->numero_bordereau ?? '—' }}</strong>
             </td>
             <td style="width:50%">
-                <span class="cell-title">6. Méthode de traitement :</span><br><br>
-                @php
-                    $methodes = [
-                        'incineration'       => 'Incinération haute température',
-                        'autoclave'          => 'Autoclave / Stérilisation',
-                        'desinfection_chimique' => 'Désinfection chimique',
-                        'autre'              => 'Autre méthode homologuée',
-                    ];
-                @endphp
-                <strong>{{ $methodes[$destruction->methode] ?? $destruction->methode }}</strong><br><br>
-                Conformité : <strong>{{ $destruction->conforme ? 'CONFORME ✓' : 'NON CONFORME ✗' }}</strong>
+                <span class="cell-title">{{ __('destructions.cert_section_method') }}</span><br><br>
+                <strong>{{ __('destructions.method_' . $methodKey . '_full') }}</strong><br><br>
+                {{ __('destructions.cert_method_conform') }}
+                <strong>{{ $destruction->conforme ? __('destructions.conform_yes_full') : __('destructions.conform_no_full') }}</strong>
             </td>
         </tr>
     </table>
@@ -138,15 +140,15 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     {{-- ══ SECTION TRANSPORTEUR ══ --}}
     <table class="grid" style="margin-top:4px;">
         <tr>
-            <td colspan="2" class="section-header">— À REMPLIR PAR LE COLLECTEUR-TRANSPORTEUR —</td>
+            <td colspan="2" class="section-header">{{ __('destructions.cert_subtitle_carrier') }}</td>
         </tr>
         <tr>
             <td colspan="2">
-                <span class="cell-title">7. Collecteur-transporteur :</span><br>
-                Nom : {{ $destruction->site_traitement ?? '—' }}<br>
-                Adresse : —<br>
-                Tél : —<br>
-                Mode de transport : Véhicule homologué transport déchets dangereux
+                <span class="cell-title">{{ __('destructions.cert_section_carrier') }}</span><br>
+                {{ __('destructions.cert_field_name') }} : {{ $destruction->site_traitement ?? '—' }}<br>
+                {{ __('destructions.cert_field_address') }} : —<br>
+                {{ __('destructions.cert_field_phone') }} : —<br>
+                {{ __('destructions.cert_carrier_mode') }}
             </td>
         </tr>
     </table>
@@ -154,18 +156,17 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     {{-- ══ DÉCLARATION ÉMETTEUR ══ --}}
     <table class="grid" style="margin-top:4px;">
         <tr>
-            <td colspan="2" class="section-header">— DÉCLARATION GÉNÉRALE DE L'ÉMETTEUR DU BORDEREAU —</td>
+            <td colspan="2" class="section-header">{{ __('destructions.cert_subtitle_decl') }}</td>
         </tr>
         <tr>
             <td style="width:60%">
-                <span class="cell-title">8. Déclaration générale de l'émetteur du bordereau :</span><br>
-                Je soussigné certifie que les renseignements portés dans les cadres ci-dessus
-                sont exacts et établis de bonne foi.<br><br>
-                NOM : <strong>{{ $etablissement->responsable_qhse ?? $etablissement->nom ?? '—' }}</strong>
-                &nbsp;&nbsp;&nbsp; DATE : <strong>{{ \Carbon\Carbon::parse($destruction->date_destruction)->format('d/m/Y') }}</strong>
+                <span class="cell-title">{{ __('destructions.cert_section_decl') }}</span><br>
+                {{ __('destructions.cert_decl_text') }}<br><br>
+                {{ __('destructions.cert_field_signname') }} : <strong>{{ $etablissement->responsable_qhse ?? $etablissement->nom ?? '—' }}</strong>
+                &nbsp;&nbsp;&nbsp; {{ __('destructions.cert_field_signdate') }} : <strong>{{ \Carbon\Carbon::parse($destruction->date_destruction)->format('d/m/Y') }}</strong>
             </td>
             <td style="width:40%; text-align:center; vertical-align:middle;">
-                <div style="font-size:9px; margin-bottom:4px;">Signature et cachet :</div>
+                <div style="font-size:9px; margin-bottom:4px;">{{ __('destructions.cert_field_stamp') }}</div>
                 <div class="signature-box"></div>
             </td>
         </tr>
@@ -174,32 +175,32 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
     {{-- ══ SECTION INSTALLATION DE DESTINATION ══ --}}
     <table class="grid" style="margin-top:4px;">
         <tr>
-            <td colspan="2" class="section-header">— À REMPLIR PAR L'INSTALLATION DE DESTINATION —</td>
+            <td colspan="2" class="section-header">{{ __('destructions.cert_subtitle_dest') }}</td>
         </tr>
         <tr>
             <td style="width:60%">
-                <span class="cell-title">9. Expédition reçue par l'installation de destination :</span><br>
-                Nom : <strong>{{ strtoupper($destruction->site_traitement ?? 'UNITÉ DE TRAITEMENT') }}</strong><br>
-                Adresse : —<br><br>
-                Quantité réelle présentée : <strong>{{ number_format($destruction->poids_reel_kg, 2) }} kg</strong><br><br>
+                <span class="cell-title">{{ __('destructions.cert_section_reception') }}</span><br>
+                {{ __('destructions.cert_field_name') }} : <strong>{{ strtoupper($destruction->site_traitement ?? '—') }}</strong><br>
+                {{ __('destructions.cert_field_address') }} : —<br><br>
+                {{ __('destructions.cert_qty_received') }} <strong>{{ number_format($destruction->poids_reel_kg, 2) }} kg</strong><br><br>
                 @if($destruction->date_reception)
-                Date de réception : <strong>{{ \Carbon\Carbon::parse($destruction->date_reception)->format('d/m/Y') }}</strong>
+                {{ __('destructions.cert_date_reception') }} <strong>{{ \Carbon\Carbon::parse($destruction->date_reception)->format('d/m/Y') }}</strong>
                 @endif
             </td>
             <td style="width:40%">
-                Certificat n° : <strong>{{ $certificatNum }}</strong><br><br>
-                Date destruction : <strong>{{ \Carbon\Carbon::parse($destruction->date_destruction)->format('d/m/Y') }}</strong><br><br>
+                {{ __('destructions.show_cert_num') }} : <strong>{{ $certificatNum }}</strong><br><br>
+                {{ __('destructions.cert_date_destruction') }} <strong>{{ \Carbon\Carbon::parse($destruction->date_destruction)->format('d/m/Y') }}</strong><br><br>
                 @if($destruction->notes)
-                Notes : {{ $destruction->notes }}
+                {{ __('destructions.show_notes') }} : {{ $destruction->notes }}
                 @endif
             </td>
         </tr>
         <tr>
             <td colspan="2">
-                <span class="cell-title">11. Réalisation de l'opération :</span><br>
-                Description : {{ $methodes[$destruction->methode] ?? $destruction->methode }} — 
-                Traitement et élimination conformes à la réglementation en vigueur sur la gestion des déchets biomédicaux.
-                @if($destruction->notes)<br>Observations : {{ $destruction->notes }}@endif
+                <span class="cell-title">{{ __('destructions.cert_section_realisation') }}</span><br>
+                {{ __('destructions.cert_real_desc') }} {{ __('destructions.method_' . $methodKey . '_full') }} —
+                {{ __('destructions.cert_real_compliance') }}
+                @if($destruction->notes)<br>{{ __('destructions.cert_observations') }} {{ $destruction->notes }}@endif
             </td>
         </tr>
         <tr>
@@ -207,16 +208,16 @@ table.grid .cell-title { font-weight:bold; font-size:9px; background:#f5f5f5; }
                 &nbsp;
             </td>
             <td style="width:40%; text-align:center;">
-                <div style="font-size:9px; margin-bottom:4px;">Signature et cachet :</div>
+                <div style="font-size:9px; margin-bottom:4px;">{{ __('destructions.cert_field_stamp') }}</div>
                 <div class="signature-box"></div>
             </td>
         </tr>
     </table>
 
     <div class="footer-note">
-        Document généré le {{ now()->format('d/m/Y à H:i') }} —
-        Plateforme BioMedDéchets —
-        Ce bordereau atteste la destruction conforme des déchets d'activités de soins.
+        {{ __('pdf.doc_generated_on', ['date' => now()->format('d/m/Y H:i')]) }} —
+        {{ __('pdf.platform_dechets') }} —
+        {{ __('pdf.destruction_compliance_notice') }}
     </div>
 
 </div>

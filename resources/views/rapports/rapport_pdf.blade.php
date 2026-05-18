@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="UTF-8">
     <style>
@@ -24,54 +24,54 @@
 <body>
 
 <div class="header">
-    <h1>🧬 RAPPORT DE GESTION DES DÉCHETS BIOMÉDICAUX</h1>
+    <h1>🧬 {{ __('pdf.report_title') }}</h1>
     <p>
-        {{ $etablissement->nom ?? "Structure inconnue" }} — {{ $etablissement->ville ?? "" }}
+        {{ $etablissement->nom ?? __('pdf.unknown_structure') }} — {{ $etablissement->ville ?? '' }}
         &nbsp;|&nbsp;
-        Période : {{ \Carbon\Carbon::parse($request->periode_debut)->format('d/m/Y') }}
-        au {{ \Carbon\Carbon::parse($request->periode_fin)->format('d/m/Y') }}
+        {{ __('pdf.period') }} : {{ \Carbon\Carbon::parse($request->periode_debut)->format('d/m/Y') }}
+        {{ __('pdf.from_to') }} {{ \Carbon\Carbon::parse($request->periode_fin)->format('d/m/Y') }}
         &nbsp;|&nbsp;
-        Généré le {{ now()->format('d/m/Y à H:i') }}
+        {{ __('pdf.report_generated_on', ['date' => now()->format('d/m/Y H:i')]) }}
     </p>
 </div>
 
 {{-- KPIs --}}
 <div class="section">
-    <div class="section-title">📊 Indicateurs clés</div>
+    <div class="section-title">{{ __('pdf.report_kpi_section') }}</div>
     <div class="kpi-grid">
         <div class="kpi-box">
             <div class="kpi-val">{{ $data['total_declarations'] }}</div>
-            <div class="kpi-lbl">Déclarations</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_declarations') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ number_format($data['poids_total_estime'], 1) }} kg</div>
-            <div class="kpi-lbl">Poids total estimé</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_weight_total') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ $data['collectes_count'] }}</div>
-            <div class="kpi-lbl">Collectes réalisées</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_collectes') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ number_format($data['poids_reel_total'], 1) }} kg</div>
-            <div class="kpi-lbl">Poids réel détruit</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_weight_real') }}</div>
         </div>
     </div>
     <div class="kpi-grid">
         <div class="kpi-box">
             <div class="kpi-val">{{ $data['destructions_count'] }}</div>
-            <div class="kpi-lbl">Destructions</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_destructions') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ number_format($data['score_conformite'] ?? 0, 1) }}%</div>
-            <div class="kpi-lbl">Score conformité moyen</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_score_avg') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ $data['alertes_count'] }}</div>
-            <div class="kpi-lbl">Alertes générées</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_alerts') }}</div>
         </div>
         <div class="kpi-box">
             <div class="kpi-val">{{ $etablissement->nombre_lits ?? 0 }}</div>
-            <div class="kpi-lbl">Lits déclarés</div>
+            <div class="kpi-lbl">{{ __('pdf.kpi_beds_declared') }}</div>
         </div>
     </div>
 </div>
@@ -79,10 +79,14 @@
 {{-- Par service --}}
 @if(count($data['par_service']) > 0)
 <div class="section">
-    <div class="section-title">🏥 Production par service</div>
+    <div class="section-title">{{ __('pdf.report_service_section') }}</div>
     <table class="data">
         <thead>
-            <tr><th>Service</th><th>Nb déclarations</th><th>Poids estimé (kg)</th></tr>
+            <tr>
+                <th>{{ __('pdf.col_service') }}</th>
+                <th>{{ __('pdf.col_decl_count') }}</th>
+                <th>{{ __('pdf.col_weight_estimated_kg') }}</th>
+            </tr>
         </thead>
         <tbody>
             @foreach($data['par_service'] as $s)
@@ -98,9 +102,9 @@
 @endif
 
 <div class="footer">
-    BioMed Platform — {{ $etablissement->nom ?? 'N/A' }} — Ce rapport est généré automatiquement. Toute modification est interdite.
+    {{ __('pdf.platform_name') }} — {{ $etablissement->nom ?? 'N/A' }} — {{ __('pdf.auto_generated_notice') }}
     @if($etablissement->responsable_qhse)
-        | Responsable QHSE : {{ $etablissement->responsable_qhse }}
+        | {{ __('pdf.qhse_responsible') }} : {{ $etablissement->responsable_qhse }}
     @endif
 </div>
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<!DOCTYPE html><html lang="{{ app()->getLocale() }}"><head><meta charset="UTF-8">
 <style>
 body{font-family:Arial,sans-serif;font-size:10pt;color:#1A2332;padding:15mm;}
 h1{color:#1B6B3A;border-bottom:3px solid #1B6B3A;padding-bottom:10px;font-size:16pt;}
@@ -13,28 +13,34 @@ tfoot td{background:#f0fdf4;font-weight:bold;}
 .sig{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px;}
 .sig-box{border:1px solid #e5e9ef;border-radius:4px;padding:15px;text-align:center;}
 </style></head><body>
-<h1>📋 Bordereau de Collecte</h1>
+<h1>📋 {{ __('collectes.header_show') }}</h1>
 <div class="grid">
-    <div class="field"><label>Établissement</label>{{ $etablissement->nom }}</div>
-    <div class="field"><label>Bordereau N°</label><strong>{{ $collecte->numero_bordereau }}</strong></div>
-    <div class="field"><label>Date de collecte</label>{{ \Carbon\Carbon::parse($collecte->date_collecte)->format('d/m/Y H:i') }}</div>
-    <div class="field"><label>Véhicule</label>{{ $collecte->vehicule ?? 'N/A' }}</div>
-    <div class="field"><label>Contenants totaux</label><strong>{{ $collecte->nombre_contenants }}</strong></div>
-    <div class="field"><label>Poids total déclaré</label><strong>{{ number_format($collecte->poids_declare_kg,2) }} kg</strong></div>
+    <div class="field"><label>{{ __('pdf.field_etab') }}</label>{{ $etablissement->nom }}</div>
+    <div class="field"><label>{{ __('pdf.field_bordereau') }}</label><strong>{{ $collecte->numero_bordereau }}</strong></div>
+    <div class="field"><label>{{ __('pdf.field_date') }}</label>{{ \Carbon\Carbon::parse($collecte->date_collecte)->format('d/m/Y H:i') }}</div>
+    <div class="field"><label>{{ __('pdf.field_vehicle') }}</label>{{ $collecte->vehicule ?? 'N/A' }}</div>
+    <div class="field"><label>{{ __('pdf.field_containers') }}</label><strong>{{ $collecte->nombre_contenants }}</strong></div>
+    <div class="field"><label>{{ __('pdf.field_weight') }}</label><strong>{{ number_format($collecte->poids_declare_kg,2) }} kg</strong></div>
 </div>
-<h3 style="color:#1B6B3A;margin-top:20px;">Détail des déchets collectés</h3>
+<h3 style="color:#1B6B3A;margin-top:20px;">{{ __('pdf.table_detail_title') }}</h3>
 <table>
-<thead><tr><th>#</th><th>Service</th><th>Type contenant</th><th>Quantité</th><th>Poids estimé</th></tr></thead>
+<thead><tr>
+    <th>{{ __('pdf.col_index') }}</th>
+    <th>{{ __('pdf.col_service') }}</th>
+    <th>{{ __('pdf.col_container_type') }}</th>
+    <th>{{ __('pdf.col_qty') }}</th>
+    <th>{{ __('pdf.col_weight_est') }}</th>
+</tr></thead>
 <tbody>
 @foreach($declarations as $i => $d)
 <tr><td>{{ $i+1 }}</td><td>{{ $d->service_nom }}</td><td>{{ $d->contenant_nom }}</td><td>{{ $d->nombre_contenants }}</td><td>{{ number_format($d->poids_estime_kg,2) }} kg</td></tr>
 @endforeach
 </tbody>
-<tfoot><tr><td colspan="3">TOTAL</td><td>{{ $declarations->sum('nombre_contenants') }}</td><td>{{ number_format($declarations->sum('poids_estime_kg'),2) }} kg</td></tr></tfoot>
+<tfoot><tr><td colspan="3">{{ __('pdf.col_total') }}</td><td>{{ $declarations->sum('nombre_contenants') }}</td><td>{{ number_format($declarations->sum('poids_estime_kg'),2) }} kg</td></tr></tfoot>
 </table>
 <div class="sig">
-<div class="sig-box"><div style="font-size:8pt;color:#6b7280;text-transform:uppercase;margin-bottom:40px;">Responsable établissement</div><div style="border-top:1px solid #333;padding-top:5px;font-size:8pt;">Nom, Signature & Cachet</div></div>
-<div class="sig-box"><div style="font-size:8pt;color:#6b7280;text-transform:uppercase;margin-bottom:40px;">Collecteur</div><div style="border-top:1px solid #333;padding-top:5px;font-size:8pt;">Nom, Signature & Cachet</div></div>
+<div class="sig-box"><div style="font-size:8pt;color:#6b7280;text-transform:uppercase;margin-bottom:40px;">{{ __('pdf.sig_etab_responsible') }}</div><div style="border-top:1px solid #333;padding-top:5px;font-size:8pt;">{{ __('pdf.sig_name_stamp') }}</div></div>
+<div class="sig-box"><div style="font-size:8pt;color:#6b7280;text-transform:uppercase;margin-bottom:40px;">{{ __('pdf.sig_collecteur') }}</div><div style="border-top:1px solid #333;padding-top:5px;font-size:8pt;">{{ __('pdf.sig_name_stamp') }}</div></div>
 </div>
-<div class="footer">Bordereau généré le {{ now()->format('d/m/Y à H:i') }} — BioMedWaste Platform</div>
+<div class="footer">{{ __('pdf.generated_on', ['date' => now()->format('d/m/Y H:i')]) }} — {{ __('pdf.platform_legacy') }}</div>
 </body></html>

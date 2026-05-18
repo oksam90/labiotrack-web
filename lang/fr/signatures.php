@@ -101,6 +101,18 @@ return [
     'btn_revoke'            => 'Révoquer',
     'confirm_revoke'        => 'Confirmer la révocation ?',
 
+    // ── PDF bordereau signé ────────────────────────────────────
+    'pdf_title'             => 'Bordereau signé :ref',
+    'pdf_h1'                => 'Bordereau de Collecte — Signé électroniquement',
+    'pdf_table_detail'      => 'Détail des déchets collectés',
+    'pdf_sig_block_head'    => '✍ Signature électronique du client',
+    'pdf_field_signer'      => 'Signataire :',
+    'pdf_field_datetime'    => 'Date et heure :',
+    'pdf_field_ip'          => 'Adresse IP :',
+    'pdf_field_device'      => 'Appareil :',
+    'pdf_footer_label'      => 'Bordereau signé électroniquement — généré le :date — LaBioTrack',
+    'pdf_integrity_label'   => "Hash d'intégrité (SHA-256) :",
+
     // ── Messages flash ─────────────────────────────────────────
     'created_success'       => 'Signature enregistrée. Le PDF est en cours de génération.',
     'created_async_pending' => 'Signature enregistrée avec succès.',

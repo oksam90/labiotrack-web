@@ -90,7 +90,10 @@ class SignatureController extends Controller
         $collecte->update(['statut' => 'signee']);
 
         // Génération PDF asynchrone (queue)
-        GenerateBordereauPdf::dispatch($signature);
+        // i18n : transmet la locale active au job async pour que le PDF
+        // généré en queue corresponde à la langue de l'utilisateur (le job
+        // hérite sinon du contexte serveur).
+        GenerateBordereauPdf::dispatch($signature, app()->getLocale());
 
         if ($request->expectsJson() || $request->wantsJson()) {
             return response()->json([
