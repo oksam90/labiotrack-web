@@ -61,4 +61,7 @@ return [
     'reco2_desc'          => 'Concentrer les actions sur les services à coûts élevés pour un impact maximal sur la réduction des déchets.',
     'reco3_title'         => 'Checklists régulières',
     'reco3_desc'          => 'Maintenir un score de conformité ≥ 80 % via des contrôles hebdomadaires pour éviter les amendes réglementaires.',
+    'flash_created'        => 'Rapport généré avec succès.',
+    'errors_etab_not_found' => 'Établissement introuvable (id: :id).',
+    'errors_file_missing'  => 'Fichier rapport introuvable. Veuillez le régénérer.',
 ];

@@ -89,4 +89,6 @@ return [
     'kpi_label_compliance_pct' => 'Compliance %',
     'kpi_label_alerts'      => 'Alerts',
     'kpi_label_users'       => 'Users',
+    'flash_switched'    => 'You are now viewing: :name',
+    'flash_reset_view'  => 'Back to global network view.',
 ];

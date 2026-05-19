@@ -90,4 +90,12 @@ return [
     'of'        => 'sur',
     'total'     => 'Total',
     'results'   => 'résultats',
+
+    // ── QR Code (transverse) ───────────────────────────────────
+    'qr_invalid' => 'QR Code invalide.',
+
+    // ── EnsureTenantMiddleware ─────────────────────────────────
+    'tenant_view_switched' => 'Vous visualisez maintenant les données de cette structure.',
+    'tenant_access_denied' => 'Accès refusé : cet établissement ne fait pas partie de votre périmètre.',
+    'tenant_no_etab'       => "Aucun établissement associé à votre compte. Contactez l'administrateur.",
 ];

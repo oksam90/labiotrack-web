@@ -75,4 +75,12 @@ return [
     'show_qr_traceability'   => 'Traceability QR Code',
     'show_automated'         => 'Automated:',
     'show_automated_detail'  => 'Estimated weight calculated (:rate kg × :count) — QR code generated — Timestamp recorded',
+
+    // Flash / errors
+    'flash_created'        => 'Declaration saved — :count container(s) | :weight kg estimated.',
+    'flash_updated'        => 'Declaration updated.',
+    'flash_deleted'        => 'Declaration deleted.',
+    'flash_qr_generated'   => 'QR Code generated.',
+    'errors_edit_collected' => 'Cannot edit a declaration already collected.',
+    'errors_delete_processed' => 'Cannot delete a declaration already processed.',
 ];

@@ -41,9 +41,9 @@ class EnsureTenantMiddleware
             if ($user->canAccessTenant($tid)) {
                 $request->session()->put('admin_tenant_id', $tid);
                 return redirect($request->url())
-                    ->with('success', 'Vous visualisez maintenant les données de cette structure.');
+                    ->with('success', __('common.tenant_view_switched'));
             }
-            abort(403, "Accès refusé : cet établissement ne fait pas partie de votre périmètre.");
+            abort(403, __('common.tenant_access_denied'));
         }
 
         // Détermination du tenant courant

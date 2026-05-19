@@ -85,19 +85,19 @@ class AdminController extends Controller
             ['reseau_id' => $reseauId, 'actif' => 1, 'created_at' => now(), 'updated_at' => now()]
         ));
 
-        return redirect()->route('admin.index')->with('success', 'Établissement créé avec succès.');
+        return redirect()->route('admin.index')->with('success', __('admin.flash_etab_created'));
     }
 
     public function edit($id)
     {
         $etablissement = DB::table('etablissements')->find($id);
-        abort_if(! $etablissement, 404, 'Établissement introuvable.');
+        abort_if(! $etablissement, 404, __('admin.errors_etab_not_found'));
 
         // SECURITY : vérifier accès réseau
         $user = Auth::user();
         if (! $user->isSuperAdmin()) {
             if ($user->isAdminReseau() && $etablissement->reseau_id !== $user->reseau_id) {
-                abort(403, "Cet établissement n'appartient pas à votre réseau.");
+                abort(403, __('admin.errors_admin_reseau_etab_not_in_network'));
             }
         }
 
@@ -124,38 +124,39 @@ class AdminController extends Controller
         $data['updated_at'] = now();
 
         DB::table('etablissements')->where('id', $id)->update($data);
-        return redirect()->route('admin.index')->with('success', 'Établissement mis à jour.');
+        return redirect()->route('admin.index')->with('success', __('admin.flash_etab_updated'));
     }
 
     public function destroy($id)
     {
         // EtablissementPolicy → suppression réservée superadmin
-        abort_unless(Auth::user()->isSuperAdmin(), 403,
-            "Suppression réservée au superadmin.");
+        abort_unless(Auth::user()->isSuperAdmin(), 403, __('admin.errors_superadmin_only'));
 
         $usersActifs = DB::table('users')->where('etablissement_id', $id)->where('actif', 1)->count();
         if ($usersActifs > 0) {
-            return back()->with('error', "Impossible : {$usersActifs} utilisateur(s) actif(s) rattaché(s). Désactivez-les d'abord.");
+            return back()->with('error', __('admin.flash_etab_delete_blocked', ['count' => $usersActifs]));
         }
         DB::table('etablissements')->where('id', $id)->delete();
-        return redirect()->route('admin.index')->with('success', 'Établissement supprimé.');
+        return redirect()->route('admin.index')->with('success', __('admin.flash_etab_deleted'));
     }
 
     public function toggleEtablissement($id)
     {
         // Seul le superadmin peut activer/désactiver un établissement
-        abort_if(! Auth::user()->isSuperAdmin(), 403, 'Action réservée au superadmin.');
+        abort_if(! Auth::user()->isSuperAdmin(), 403, __('admin.errors_superadmin_only'));
 
         $etablissement = DB::table('etablissements')->find($id);
-        abort_if(! $etablissement, 404, 'Établissement introuvable.');
+        abort_if(! $etablissement, 404, __('admin.errors_etab_not_found'));
 
         DB::table('etablissements')->where('id', $id)->update([
             'actif'      => $etablissement->actif ? 0 : 1,
             'updated_at' => now(),
         ]);
 
-        $statut = $etablissement->actif ? 'désactivé' : 'activé';
-        return back()->with('success', "Établissement {$statut} avec succès.");
+        $statut = $etablissement->actif
+            ? __('admin.flash_etab_status_deactivated')
+            : __('admin.flash_etab_status_activated');
+        return back()->with('success', __('admin.flash_etab_toggled', ['status' => $statut]));
     }
 
     /**
@@ -224,6 +225,8 @@ class AdminController extends Controller
 
     public function storeUser(Request $request)
     {
+        // Messages custom centralisés dans lang/{fr,en}/validation.php
+        // (sections 'custom' et 'attributes' — i18n FR/EN)
         $request->validate([
             'nom'      => 'required|string|max:100',
             'prenom'   => 'required|string|max:100',
@@ -232,18 +235,13 @@ class AdminController extends Controller
             'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire,client_signataire',
             'reseau_id'        => 'nullable|exists:reseaux,id',
             'etablissement_id' => 'nullable|exists:etablissements,id',
-        ], [
-            'password.required'  => 'Le mot de passe est obligatoire.',
-            'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
-            'email.unique'       => 'Cet email est déjà utilisé par un autre compte.',
         ]);
 
         $user = Auth::user();
 
         // SECURITY : seul le superadmin peut créer un AdminRéseau
         if ($request->role === 'admin_reseau' && ! $user->isSuperAdmin()) {
-            abort(403, "Seul le superadmin peut créer un AdminRéseau.");
+            abort(403, __('admin.errors_admin_reseau_create_superadmin_only'));
         }
 
         $etabId   = $request->etablissement_id ?: null;
@@ -256,7 +254,7 @@ class AdminController extends Controller
             if ($etabId) {
                 $etab = DB::table('etablissements')->find($etabId);
                 abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
-                    "L'établissement sélectionné n'appartient pas à votre réseau.");
+                    __('admin.errors_admin_reseau_etab_not_in_network'));
             }
         }
 
@@ -270,7 +268,7 @@ class AdminController extends Controller
         // client_signataire : SÉCURITÉ — un établissement est obligatoire
         // (sa fonction unique = signer pour son étab).
         if ($request->role === 'client_signataire' && ! $etabId) {
-            abort(422, "Le rôle Client signataire requiert un établissement.");
+            abort(422, __('admin.errors_client_signataire_needs_etab'));
         }
 
         DB::table('users')->insert([
@@ -287,7 +285,7 @@ class AdminController extends Controller
             'updated_at'       => now(),
         ]);
 
-        return redirect()->route('admin.utilisateurs.index')->with('success', 'Utilisateur créé.');
+        return redirect()->route('admin.utilisateurs.index')->with('success', __('admin.flash_user_created'));
     }
 
     public function editUser($id)
@@ -303,7 +301,7 @@ class AdminController extends Controller
                 $etab = DB::table('etablissements')->find($user->etablissement_id);
                 $allowed = $etab && $etab->reseau_id === $current->reseau_id;
             }
-            abort_unless($allowed, 403, "Cet utilisateur n'appartient pas à votre réseau.");
+            abort_unless($allowed, 403, __('admin.errors_user_not_in_network'));
         }
 
         $etablissements = $this->etablissementsAccessibles();
@@ -322,19 +320,17 @@ class AdminController extends Controller
             'etablissement_id' => 'nullable|exists:etablissements,id',
         ];
 
-        $messages = [];
-
         if ($request->filled('password')) {
-            $rules['password']              = 'min:8|confirmed';
-            $messages['password.min']       = 'Le mot de passe doit contenir au moins 8 caractères.';
-            $messages['password.confirmed'] = 'La confirmation du mot de passe ne correspond pas.';
+            $rules['password'] = 'min:8|confirmed';
         }
 
-        $request->validate($rules, $messages);
+        // Messages custom : voir lang/{fr,en}/validation.php (sections
+        // 'custom' et 'attributes' — pas besoin de passer $messages ici)
+        $request->validate($rules);
 
         // SECURITY : seul superadmin peut promouvoir admin_reseau
         if ($request->role === 'admin_reseau' && ! Auth::user()->isSuperAdmin()) {
-            abort(403, "Seul le superadmin peut désigner un AdminRéseau.");
+            abort(403, __('admin.errors_admin_reseau_promote_superadmin_only'));
         }
 
         $data = $request->only(['nom','prenom','email','role','etablissement_id','reseau_id','telephone']);
@@ -346,27 +342,27 @@ class AdminController extends Controller
         }
         $data['updated_at'] = now();
         DB::table('users')->where('id', $id)->update($data);
-        return redirect()->route('admin.utilisateurs.index')->with('success', 'Utilisateur mis à jour.');
+        return redirect()->route('admin.utilisateurs.index')->with('success', __('admin.flash_user_updated'));
     }
 
     public function destroyUser($id)
     {
         // Ne pas supprimer son propre compte
-        abort_if($id == Auth::id(), 403, 'Vous ne pouvez pas supprimer votre propre compte.');
+        abort_if($id == Auth::id(), 403, __('admin.errors_cant_delete_self'));
         DB::table('users')->where('id', $id)->delete();
-        return redirect()->route('admin.utilisateurs.index')->with('success', 'Utilisateur supprimé.');
+        return redirect()->route('admin.utilisateurs.index')->with('success', __('admin.flash_user_deleted'));
     }
 
     public function toggleUser($id)
     {
-        abort_if($id == Auth::id(), 403, 'Vous ne pouvez pas désactiver votre propre compte.');
+        abort_if($id == Auth::id(), 403, __('admin.errors_cant_deactivate_self'));
         $user = DB::table('users')->find($id);
         abort_if(! $user, 404);
         DB::table('users')->where('id', $id)->update([
             'actif'      => $user->actif ? 0 : 1,
             'updated_at' => now(),
         ]);
-        return back()->with('success', 'Statut utilisateur modifié.');
+        return back()->with('success', __('admin.flash_user_status_changed'));
     }
 
     // ── Services ─────────────────────────────────────────────────────────────
@@ -404,7 +400,7 @@ class AdminController extends Controller
         if ($user->isAdminReseau() && $user->reseau_id) {
             $etab = DB::table('etablissements')->find($etabId);
             abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
-                "Cet établissement n'appartient pas à votre réseau.");
+                __('admin.errors_admin_reseau_etab_not_in_network'));
         }
 
         // Admin local : forcer son propre établissement
@@ -421,7 +417,7 @@ class AdminController extends Controller
             'created_at'       => now(),
             'updated_at'       => now(),
         ]);
-        return back()->with('success', 'Service créé.');
+        return back()->with('success', __('admin.flash_service_created'));
     }
 
     public function updateService(Request $request, $id)
@@ -433,31 +429,33 @@ class AdminController extends Controller
             'responsable' => $request->responsable,
             'updated_at'  => now(),
         ]);
-        return back()->with('success', 'Service mis à jour.');
+        return back()->with('success', __('admin.flash_service_updated'));
     }
 
     public function destroyService($id)
     {
         $count = DB::table('declarations')->where('service_id', $id)->count();
         if ($count > 0) {
-            return back()->with('error', "Impossible : {$count} déclaration(s) liée(s) à ce service.");
+            return back()->with('error', __('admin.flash_service_delete_blocked', ['count' => $count]));
         }
         DB::table('services')->where('id', $id)->delete();
-        return back()->with('success', 'Service supprimé.');
+        return back()->with('success', __('admin.flash_service_deleted'));
     }
 
     public function toggleService($id)
     {
         $service = DB::table('services')->find($id);
-        abort_if(! $service, 404, 'Service introuvable.');
+        abort_if(! $service, 404, __('admin.errors_service_not_found'));
 
         DB::table('services')->where('id', $id)->update([
             'actif'      => $service->actif ? 0 : 1,
             'updated_at' => now(),
         ]);
 
-        $statut = $service->actif ? 'désactivé' : 'activé';
-        return back()->with('success', "Service {$statut} avec succès.");
+        $statut = $service->actif
+            ? __('admin.flash_etab_status_deactivated')
+            : __('admin.flash_etab_status_activated');
+        return back()->with('success', __('admin.flash_service_toggled', ['status' => $statut]));
     }
 
     // ── Contenants ─────────────────────────────────────────────────────────
@@ -476,8 +474,7 @@ class AdminController extends Controller
     public function storeContenant(Request $request)
     {
         // Référentiel global : seul superadmin peut créer
-        abort_unless(Auth::user()->isSuperAdmin(), 403,
-            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+        abort_unless(Auth::user()->isSuperAdmin(), 403, __('admin.errors_containers_readonly'));
 
         $request->validate([
             'nom'            => 'required|string|max:255',
@@ -492,13 +489,12 @@ class AdminController extends Controller
             $request->only(['nom','code','type_dechet_id','poids_moyen_kg','capacite_litres','cout_unitaire','description']),
             ['created_at' => now(), 'updated_at' => now()]
         ));
-        return back()->with('success', 'Type de contenant créé.');
+        return back()->with('success', __('admin.flash_container_created'));
     }
 
     public function updateContenant(Request $request, $id)
     {
-        abort_unless(Auth::user()->isSuperAdmin(), 403,
-            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+        abort_unless(Auth::user()->isSuperAdmin(), 403, __('admin.errors_containers_readonly'));
 
         $request->validate([
             'nom'            => 'required|string|max:255',
@@ -511,20 +507,19 @@ class AdminController extends Controller
             $request->only(['nom','poids_moyen_kg','capacite_litres','cout_unitaire','description']),
             ['updated_at' => now()]
         ));
-        return back()->with('success', 'Contenant mis à jour.');
+        return back()->with('success', __('admin.flash_container_updated'));
     }
 
     public function destroyContenant($id)
     {
-        abort_unless(Auth::user()->isSuperAdmin(), 403,
-            "Le référentiel des contenants est en lecture seule pour votre rôle.");
+        abort_unless(Auth::user()->isSuperAdmin(), 403, __('admin.errors_containers_readonly'));
 
         $count = DB::table('declarations')->where('type_contenant_id', $id)->count();
         if ($count > 0) {
-            return back()->with('error', "Impossible : {$count} déclaration(s) utilisent ce contenant.");
+            return back()->with('error', __('admin.flash_container_delete_blocked', ['count' => $count]));
         }
         DB::table('type_contenants')->where('id', $id)->delete();
-        return back()->with('success', 'Contenant supprimé avec succès.');
+        return back()->with('success', __('admin.flash_container_deleted'));
     }
 
     // ── Activités temps réel ─────────────────────────────────────────────────

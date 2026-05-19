@@ -90,4 +90,12 @@ return [
     'of'        => 'of',
     'total'     => 'Total',
     'results'   => 'results',
+
+    // ── QR Code (cross-cutting) ────────────────────────────────
+    'qr_invalid' => 'Invalid QR Code.',
+
+    // ── EnsureTenantMiddleware ─────────────────────────────────
+    'tenant_view_switched' => 'You are now viewing this structure\'s data.',
+    'tenant_access_denied' => 'Access denied: this establishment is not part of your scope.',
+    'tenant_no_etab'       => 'No establishment associated with your account. Contact the administrator.',
 ];

@@ -65,4 +65,6 @@ return [
     'show_agent'        => 'Agent',
     'show_service'      => 'Service',
     'show_service_general' => 'Général',
+    'flash_created' => 'Checklist enregistrée — Score : :score%',
+    'errors_access_denied' => 'Accès refusé. Seuls les responsables QHSE et administrateurs peuvent créer des checklists.',
 ];

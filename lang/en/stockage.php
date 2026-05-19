@@ -59,4 +59,6 @@ return [
     'reminder_step2'     => '2. Specify the storage zone',
     'reminder_step3'     => '3. Set a collection deadline',
     'reminder_warning'   => '⚠️ Declarations already linked to an ongoing transfer are not listed.',
+    'flash_created'   => 'Transfer saved — :count container(s) | :weight kg.',
+    'flash_validated' => 'Central storage reception validated ✓',
 ];

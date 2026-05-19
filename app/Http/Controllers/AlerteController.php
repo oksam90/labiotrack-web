@@ -19,12 +19,12 @@ class AlerteController extends Controller
     {
         $alerte = Alerte::findOrFail($id);
         $alerte->update(['lu'=>true,'lu_par'=>Auth::id(),'lu_at'=>now()]);
-        return back()->with('success', 'Alerte marquée comme lue.');
+        return back()->with('success', __('alertes.flash_marked_read'));
     }
 
     public function toutLire()
     {
         Alerte::where('lu', false)->update(['lu'=>true,'lu_par'=>Auth::id(),'lu_at'=>now()]);
-        return back()->with('success', 'Toutes les alertes ont été marquées comme lues.');
+        return back()->with('success', __('alertes.flash_all_marked_read'));
     }
 }

@@ -113,4 +113,5 @@ return [
 
     // Flash messages
     'created_success'    => 'Destruction recorded — Certificate no. :ref',
+    'flash_created'      => 'Destruction recorded. Certificate no. :ref generated.',
 ];

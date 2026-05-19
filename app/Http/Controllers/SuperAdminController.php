@@ -247,20 +247,20 @@ class SuperAdminController extends Controller
         // Vérifier que l'établissement appartient au périmètre de l'utilisateur
         abort_unless(
             $user->canAccessTenant((int) $id),
-            403, "Cet établissement ne fait pas partie de votre périmètre."
+            403, __('common.tenant_access_denied')
         );
 
         $etab = Etablissement::withoutGlobalScopes()->findOrFail($id);
         $request->session()->put('admin_tenant_id', $id);
         return redirect()->route('dashboard')
-            ->with('success', "Vous visualisez maintenant : {$etab->nom}");
+            ->with('success', __('superadmin.flash_switched', ['name' => $etab->nom]));
     }
 
     public function resetTenant(Request $request)
     {
         $request->session()->forget('admin_tenant_id');
         return redirect()->route('superadmin.index')
-            ->with('success', 'Retour à la vue réseau globale.');
+            ->with('success', __('superadmin.flash_reset_view'));
     }
 
     public function statsReseau()

@@ -37,7 +37,7 @@ class ChecklistController extends Controller
         // Seuls les rôles habilités peuvent créer une checklist
         // Le prestataire n'est pas responsable des checklists internes (aligné avec ChecklistPolicy)
         if (! in_array($user->role, ['superadmin','admin','qhse'])) {
-            abort(403, 'Accès refusé. Seuls les responsables QHSE et administrateurs peuvent créer des checklists.');
+            abort(403, __('checklists.errors_access_denied'));
         }
 
         $items = ['boites_fermees_75','sacs_correctement_etiquetes','local_ventile',
@@ -77,7 +77,7 @@ class ChecklistController extends Controller
         }
 
         return redirect()->route('checklists.index')
-            ->with('success', "Checklist enregistrée — Score : {$scoreConformite}%");
+            ->with('success', __('checklists.flash_created', ['score' => $scoreConformite]));
     }
 
     public function show($id)

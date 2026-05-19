@@ -75,4 +75,12 @@ return [
     'show_qr_traceability'   => 'QR Code de traçabilité',
     'show_automated'         => 'Automatisé :',
     'show_automated_detail'  => 'Poids estimé calculé (:rate kg × :count) — QR code généré — Horodatage enregistré',
+
+    // Flash / errors
+    'flash_created'        => 'Déclaration enregistrée — :count contenant(s) | :weight kg estimé.',
+    'flash_updated'        => 'Déclaration mise à jour.',
+    'flash_deleted'        => 'Déclaration supprimée.',
+    'flash_qr_generated'   => 'QR Code généré.',
+    'errors_edit_collected' => 'Impossible de modifier une déclaration déjà collectée.',
+    'errors_delete_processed' => 'Impossible de supprimer une déclaration déjà traitée.',
 ];

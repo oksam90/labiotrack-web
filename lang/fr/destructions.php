@@ -113,4 +113,5 @@ return [
 
     // Flash messages
     'created_success'    => 'Destruction enregistrée — Certificat n° :ref',
+    'flash_created'      => 'Destruction enregistrée. Certificat n° :ref généré.',
 ];

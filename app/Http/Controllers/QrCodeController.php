@@ -22,12 +22,12 @@ class QrCodeController extends Controller
     {
         $decoded = base64_decode($qr, true);
         if ($decoded === false) {
-            return redirect('/dashboard')->with('error', 'QR Code invalide.');
+            return redirect('/dashboard')->with('error', __('common.qr_invalid'));
         }
 
         $data = json_decode($decoded, true);
         if (!is_array($data)) {
-            return redirect('/dashboard')->with('error', 'QR Code invalide.');
+            return redirect('/dashboard')->with('error', __('common.qr_invalid'));
         }
 
         // Only allow expected keys and validate they are integers
@@ -35,13 +35,13 @@ class QrCodeController extends Controller
         $filtered = array_intersect_key($data, array_flip($allowed));
         foreach ($filtered as $key => $value) {
             if (!is_numeric($value) || intval($value) != $value || intval($value) < 1) {
-                return redirect('/dashboard')->with('error', 'QR Code invalide.');
+                return redirect('/dashboard')->with('error', __('common.qr_invalid'));
             }
             $filtered[$key] = (int) $value;
         }
 
         if (empty($filtered)) {
-            return redirect('/dashboard')->with('error', 'QR Code invalide.');
+            return redirect('/dashboard')->with('error', __('common.qr_invalid'));
         }
 
         return redirect()->route('collectes.create')->with('qr_data', $filtered);

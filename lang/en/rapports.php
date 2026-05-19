@@ -61,4 +61,7 @@ return [
     'reco2_desc'          => 'Focus actions on high-cost services for maximum impact on waste reduction.',
     'reco3_title'         => 'Regular checklists',
     'reco3_desc'          => 'Maintain a compliance score ≥ 80% via weekly controls to avoid regulatory fines.',
+    'flash_created'        => 'Report generated successfully.',
+    'errors_etab_not_found' => 'Establishment not found (id: :id).',
+    'errors_file_missing'  => 'Report file not found. Please regenerate it.',
 ];

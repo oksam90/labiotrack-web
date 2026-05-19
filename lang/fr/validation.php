@@ -156,4 +156,106 @@ return [
     'uppercase'              => 'Le champ :attribute doit être en majuscules.',
     'url'                    => 'Le format de l\'URL de :attribute n\'est pas valide.',
     'uuid'                   => 'Le champ :attribute doit être un UUID valide',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Messages de validation personnalisés (LaBioTrack)
+    |--------------------------------------------------------------------------
+    | Surcharge spécifique de messages par champ + règle.
+    | Convention Laravel : custom.{field}.{rule}
+    */
+    'custom' => [
+        'password' => [
+            'required'  => 'Le mot de passe est obligatoire.',
+            'min'       => 'Le mot de passe doit contenir au moins :min caractères.',
+            'confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+        ],
+        'email' => [
+            'unique' => 'Cet email est déjà utilisé par un autre compte.',
+        ],
+        'signature_image' => [
+            'required' => 'Veuillez dessiner votre signature.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Libellés des attributs (placeholders :attribute)
+    |--------------------------------------------------------------------------
+    | Remplace les noms de champ techniques par des libellés lisibles dans
+    | les messages d'erreur génériques. Exemple : "Le champ etablissement_id
+    | est obligatoire" → "Le champ établissement est obligatoire".
+    */
+    'attributes' => [
+        // Identité
+        'nom'                   => 'nom',
+        'prenom'                => 'prénom',
+        'email'                 => 'adresse email',
+        'password'              => 'mot de passe',
+        'password_confirmation' => 'confirmation du mot de passe',
+        'telephone'             => 'téléphone',
+        'role'                  => 'rôle',
+
+        // Multi-tenant
+        'etablissement_id'      => 'établissement',
+        'reseau_id'             => 'réseau',
+        'service_id'            => 'service',
+
+        // Établissement
+        'type'                  => 'type',
+        'adresse'               => 'adresse',
+        'ville'                 => 'ville',
+        'responsable_qhse'      => 'responsable QHSE',
+        'nombre_lits'           => 'nombre de lits',
+
+        // Contenants
+        'code'                  => 'code',
+        'type_dechet_id'        => 'type de déchet',
+        'type_contenant_id'     => 'type de contenant',
+        'poids_moyen_kg'        => 'poids moyen (kg)',
+        'capacite_litres'       => 'capacité (litres)',
+        'cout_unitaire'         => 'coût unitaire',
+        'description'           => 'description',
+
+        // Déclarations / Collectes
+        'nombre_contenants'     => 'nombre de contenants',
+        'poids_estime_kg'       => 'poids estimé (kg)',
+        'declarations'          => 'déclarations',
+        'declaration_ids'       => 'déclarations',
+        'collecte_id'           => 'collecte',
+        'collecteur_id'         => 'collecteur',
+        'vehicule'              => 'véhicule',
+        'photo'                 => 'photo',
+        'notes'                 => 'notes',
+
+        // Stockage
+        'zone_stockage'         => 'zone de stockage',
+        'date_limite_collecte'  => 'date limite de collecte',
+        'signature_responsable' => 'signature du responsable',
+
+        // Destruction
+        'methode'               => 'méthode',
+        'site_traitement'       => 'site de traitement',
+        'date_reception'        => 'date de réception',
+        'date_destruction'      => 'date de destruction',
+        'poids_reel_kg'         => 'poids réel (kg)',
+        'conforme'              => 'conformité',
+        'certificat_numero'     => 'numéro de certificat',
+
+        // Signature
+        'signature_image'       => 'signature',
+        'signataire_nom'        => 'nom du signataire',
+        'signataire_fonction'   => 'fonction du signataire',
+        'commentaire'           => 'commentaire',
+        'revocation_reason'     => 'motif de révocation',
+
+        // Rapports
+        'periode_debut'         => 'date de début',
+        'periode_fin'           => 'date de fin',
+
+        // Réseaux
+        'contact_email'         => 'email de contact',
+        'contact_telephone'     => 'téléphone de contact',
+        'actif'                 => 'statut actif',
+    ],
 ];

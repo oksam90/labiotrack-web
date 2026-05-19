@@ -135,7 +135,10 @@ class StockageController extends Controller
         }
 
         return redirect()->route('stockage.show', $transfertId)
-            ->with('success', "Transfert enregistré — {$totalContenants} contenant(s) | {$totalPoids} kg.");
+            ->with('success', __('stockage.flash_created', [
+                'count'  => $totalContenants,
+                'weight' => $totalPoids,
+            ]));
     }
 
     public function show($id)
@@ -181,6 +184,6 @@ class StockageController extends Controller
         ]);
 
         return redirect()->route('stockage.show', $id)
-            ->with('success', 'Réception au stockage central validée ✓');
+            ->with('success', __('stockage.flash_validated'));
     }
 }

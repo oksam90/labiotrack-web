@@ -53,7 +53,7 @@ class ReseauController extends Controller
         Reseau::create($data);
 
         return redirect()->route('reseaux.index')
-            ->with('success', 'Réseau créé avec succès.');
+            ->with('success', __('reseaux.flash_created'));
     }
 
     public function show($id)
@@ -87,7 +87,7 @@ class ReseauController extends Controller
         $reseau->update($data);
 
         return redirect()->route('reseaux.index')
-            ->with('success', 'Réseau mis à jour.');
+            ->with('success', __('reseaux.flash_updated'));
     }
 
     public function destroy($id)
@@ -96,13 +96,12 @@ class ReseauController extends Controller
         $reseau = Reseau::findOrFail($id);
 
         if ($reseau->etablissements()->count() > 0) {
-            return back()->with('error',
-                "Impossible de supprimer ce réseau : il contient encore des établissements.");
+            return back()->with('error', __('reseaux.errors_delete_has_etabs'));
         }
 
         $reseau->delete();
         return redirect()->route('reseaux.index')
-            ->with('success', 'Réseau supprimé.');
+            ->with('success', __('reseaux.flash_deleted'));
     }
 
     public function toggle($id)

@@ -111,7 +111,7 @@ class DestructionController extends Controller
         ]);
 
         return redirect()->route('destructions.certificat', $id)
-            ->with('success', "Destruction enregistrée. Certificat n° {$certificatNum} généré.");
+            ->with('success', __('destructions.flash_created', ['ref' => $certificatNum]));
     }
 
     public function show($id)

@@ -91,7 +91,10 @@ class DeclarationController extends Controller
         $this->detecterAnomalieVolume($etabId, $service->id, $poids);
 
         return redirect()->route('declarations.show', $decl->id)
-            ->with('success', "Déclaration enregistrée — {$request->nombre_contenants} contenant(s) | {$poids} kg estimé.");
+            ->with('success', __('declarations.flash_created', [
+                'count'  => $request->nombre_contenants,
+                'weight' => $poids,
+            ]));
     }
 
     public function show($id)
@@ -124,7 +127,7 @@ class DeclarationController extends Controller
         ]);
 
         if ($declaration->statut !== 'en_stock') {
-            return back()->with('error', 'Impossible de modifier une déclaration déjà collectée.');
+            return back()->with('error', __('declarations.errors_edit_collected'));
         }
 
         $contenant = TypeContenant::findOrFail($request->type_contenant_id);
@@ -136,7 +139,7 @@ class DeclarationController extends Controller
             'notes'             => $request->notes,
         ]);
 
-        return redirect()->route('declarations.show', $id)->with('success', 'Déclaration mise à jour.');
+        return redirect()->route('declarations.show', $id)->with('success', __('declarations.flash_updated'));
     }
 
     public function destroy($id)
@@ -145,11 +148,11 @@ class DeclarationController extends Controller
         $this->authorize('delete', $declaration);
 
         if ($declaration->statut !== 'en_stock') {
-            return back()->with('error', 'Impossible de supprimer une déclaration déjà traitée.');
+            return back()->with('error', __('declarations.errors_delete_processed'));
         }
 
         $declaration->delete();
-        return redirect()->route('declarations.index')->with('success', 'Déclaration supprimée.');
+        return redirect()->route('declarations.index')->with('success', __('declarations.flash_deleted'));
     }
 
     public function generateQr($id)
@@ -162,7 +165,7 @@ class DeclarationController extends Controller
             ->generate(json_encode(['declaration_id'=>$id,'etablissement_id'=>$declaration->etablissement_id])));
         $declaration->update(['qr_code' => $qrPath]);
 
-        return back()->with('success', 'QR Code généré.');
+        return back()->with('success', __('declarations.flash_qr_generated'));
     }
 
     private function detecterAnomalieVolume(int $etabId, int $serviceId, float $poids): void

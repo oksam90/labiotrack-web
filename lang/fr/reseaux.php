@@ -50,4 +50,8 @@ return [
     'col_email'         => 'Email',
     'empty_etabs'       => 'Aucun établissement rattaché à ce réseau.',
     'empty_admins'      => 'Aucun AdminRéseau désigné.',
+    'flash_created' => 'Réseau créé avec succès.',
+    'flash_updated' => 'Réseau mis à jour.',
+    'flash_deleted' => 'Réseau supprimé.',
+    'errors_delete_has_etabs' => 'Impossible de supprimer ce réseau : il contient encore des établissements.',
 ];

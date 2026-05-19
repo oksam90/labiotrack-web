@@ -156,4 +156,106 @@ return [
     'uppercase'              => 'The :attribute field must be uppercase.',
     'url'                    => 'The :attribute field must be a valid URL.',
     'uuid'                   => 'The :attribute field must be a valid UUID.',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custom validation messages (LaBioTrack)
+    |--------------------------------------------------------------------------
+    | Field+rule specific message overrides.
+    | Laravel convention: custom.{field}.{rule}
+    */
+    'custom' => [
+        'password' => [
+            'required'  => 'Password is required.',
+            'min'       => 'Password must be at least :min characters long.',
+            'confirmed' => 'Password confirmation does not match.',
+        ],
+        'email' => [
+            'unique' => 'This email is already used by another account.',
+        ],
+        'signature_image' => [
+            'required' => 'Please draw your signature.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attribute labels (:attribute placeholders)
+    |--------------------------------------------------------------------------
+    | Replaces technical field names with readable labels in generic
+    | error messages. Example: "The etablissement_id field is required."
+    | → "The establishment field is required."
+    */
+    'attributes' => [
+        // Identity
+        'nom'                   => 'last name',
+        'prenom'                => 'first name',
+        'email'                 => 'email address',
+        'password'              => 'password',
+        'password_confirmation' => 'password confirmation',
+        'telephone'             => 'phone',
+        'role'                  => 'role',
+
+        // Multi-tenant
+        'etablissement_id'      => 'establishment',
+        'reseau_id'             => 'network',
+        'service_id'            => 'service',
+
+        // Establishment
+        'type'                  => 'type',
+        'adresse'               => 'address',
+        'ville'                 => 'city',
+        'responsable_qhse'      => 'QHSE manager',
+        'nombre_lits'           => 'number of beds',
+
+        // Containers
+        'code'                  => 'code',
+        'type_dechet_id'        => 'waste type',
+        'type_contenant_id'     => 'container type',
+        'poids_moyen_kg'        => 'average weight (kg)',
+        'capacite_litres'       => 'capacity (liters)',
+        'cout_unitaire'         => 'unit cost',
+        'description'           => 'description',
+
+        // Declarations / Collections
+        'nombre_contenants'     => 'number of containers',
+        'poids_estime_kg'       => 'estimated weight (kg)',
+        'declarations'          => 'declarations',
+        'declaration_ids'       => 'declarations',
+        'collecte_id'           => 'collection',
+        'collecteur_id'         => 'collector',
+        'vehicule'              => 'vehicle',
+        'photo'                 => 'photo',
+        'notes'                 => 'notes',
+
+        // Storage
+        'zone_stockage'         => 'storage zone',
+        'date_limite_collecte'  => 'collection deadline',
+        'signature_responsable' => 'manager signature',
+
+        // Destruction
+        'methode'               => 'method',
+        'site_traitement'       => 'treatment site',
+        'date_reception'        => 'reception date',
+        'date_destruction'      => 'destruction date',
+        'poids_reel_kg'         => 'actual weight (kg)',
+        'conforme'              => 'compliance',
+        'certificat_numero'     => 'certificate number',
+
+        // Signature
+        'signature_image'       => 'signature',
+        'signataire_nom'        => 'signer name',
+        'signataire_fonction'   => 'signer role',
+        'commentaire'           => 'comment',
+        'revocation_reason'     => 'revocation reason',
+
+        // Reports
+        'periode_debut'         => 'start date',
+        'periode_fin'           => 'end date',
+
+        // Networks
+        'contact_email'         => 'contact email',
+        'contact_telephone'     => 'contact phone',
+        'actif'                 => 'active status',
+    ],
 ];

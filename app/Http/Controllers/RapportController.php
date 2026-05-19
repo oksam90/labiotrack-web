@@ -51,7 +51,7 @@ class RapportController extends Controller
 
         $etablissement = DB::table('etablissements')->find($etabId);
         if (! $etablissement) {
-            return back()->with('error', "Établissement introuvable (id: {$etabId}).");
+            return back()->with('error', __('rapports.errors_etab_not_found', ['id' => $etabId]));
         }
 
         $data = Cache::remember(
@@ -83,7 +83,7 @@ class RapportController extends Controller
         ]);
 
         return redirect()->route('rapports.pdf', $rapportId)
-            ->with('success', 'Rapport généré avec succès.');
+            ->with('success', __('rapports.flash_created'));
     }
 
     public function pdf($id)
@@ -95,7 +95,7 @@ class RapportController extends Controller
 
         $fichier = storage_path('app/public/' . $rapport->fichier_path);
         if (! file_exists($fichier)) {
-            abort(404, 'Fichier rapport introuvable. Veuillez le régénérer.');
+            abort(404, __('rapports.errors_file_missing'));
         }
 
         return response()->file($fichier);

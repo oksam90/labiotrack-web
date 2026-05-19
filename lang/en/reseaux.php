@@ -50,4 +50,8 @@ return [
     'col_email'         => 'Email',
     'empty_etabs'       => 'No establishment attached to this network.',
     'empty_admins'      => 'No NetworkAdmin assigned.',
+    'flash_created' => 'Network created successfully.',
+    'flash_updated' => 'Network updated.',
+    'flash_deleted' => 'Network deleted.',
+    'errors_delete_has_etabs' => 'Cannot delete this network: it still contains establishments.',
 ];

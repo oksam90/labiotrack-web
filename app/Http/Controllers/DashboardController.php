@@ -32,7 +32,7 @@ class DashboardController extends Controller
 
         // Utilisateurs locaux (qhse, agent) sans établissement → erreur
         if (! $tenant) {
-            abort(403, 'Aucun établissement associé à votre compte. Contactez l\'administrateur.');
+            abort(403, __('common.tenant_no_etab'));
         }
 
         $etabId = $tenant->id;

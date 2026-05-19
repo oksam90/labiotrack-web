@@ -59,4 +59,6 @@ return [
     'reminder_step2'     => '2. Indiquez la zone de stockage',
     'reminder_step3'     => '3. Fixez une date limite de collecte',
     'reminder_warning'   => '⚠️ Les déclarations déjà rattachées à un transfert en cours ne sont pas listées.',
+    'flash_created'   => 'Transfert enregistré — :count contenant(s) | :weight kg.',
+    'flash_validated' => 'Réception au stockage central validée ✓',
 ];
