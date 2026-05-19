@@ -42,7 +42,7 @@
                 @foreach($etabs as $e)
                 <tr>
                     <td class="fw-semibold">{{ $e->nom }}</td>
-                    <td><span class="badge bg-light text-dark border">{{ ucfirst($e->type) }}</span></td>
+                    <td><span class="badge bg-light text-dark border">{{ __('admin.etab_type_' . $e->type) }}</span></td>
                     <td class="text-end">
                         <div class="d-flex align-items-center justify-content-end gap-2">
                             <div class="progress flex-fill" style="height:6px;max-width:100px;">

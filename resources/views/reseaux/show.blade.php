@@ -38,7 +38,7 @@
                     @forelse($reseau->etablissements as $e)
                         <tr>
                             <td class="ps-3 fw-bold">{{ $e->nom }}</td>
-                            <td><span class="badge bg-info">{{ ucfirst($e->type) }}</span></td>
+                            <td><span class="badge bg-info">{{ __('admin.etab_type_' . $e->type) }}</span></td>
                             <td>{{ $e->ville }}</td>
                             <td>@if($e->actif)<span class="badge bg-success">{{ __('reseaux.status_active') }}</span>@else<span class="badge bg-secondary">{{ __('reseaux.status_inactive') }}</span>@endif</td>
                         </tr>

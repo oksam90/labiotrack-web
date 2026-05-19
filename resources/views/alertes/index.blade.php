@@ -20,7 +20,7 @@
             <div class="d-flex gap-3 mt-1">
                 <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($a->created_at)->diffForHumans() }}</small>
                 @if($a->service_nom)<small class="text-muted"><i class="bi bi-hospital me-1"></i>{{ $a->service_nom }}</small>@endif
-                <span class="badge bg-{{ $a->niveau==='danger'?'danger':($a->niveau==='warning'?'warning':'info') }} bg-opacity-10 text-{{ $a->niveau==='danger'?'danger':($a->niveau==='warning'?'warning':'info') }}" style="font-size:.7rem;">{{ ucfirst($a->type) }}</span>
+                <span class="badge bg-{{ $a->niveau==='danger'?'danger':($a->niveau==='warning'?'warning':'info') }} bg-opacity-10 text-{{ $a->niveau==='danger'?'danger':($a->niveau==='warning'?'warning':'info') }}" style="font-size:.7rem;">{{ __('alertes.type_' . $a->type) }}</span>
             </div>
         </div>
         @if(!$a->lu)

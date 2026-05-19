@@ -61,4 +61,13 @@ return [
     'reminder_warning'   => '⚠️ Les déclarations déjà rattachées à un transfert en cours ne sont pas listées.',
     'flash_created'   => 'Transfert enregistré — :count contenant(s) | :weight kg.',
     'flash_validated' => 'Réception au stockage central validée ✓',
+
+    // Show (détail transfert)
+    'page_show_title'   => 'Transfert',
+    'show_header'       => 'Transfert',
+    'show_zone'         => 'Zone :',
+    'show_deadline'     => 'Date limite :',
+    'show_status'       => 'Statut :',
+    'btn_validate_receipt' => 'Valider la réception',
+    'btn_receipt_validated' => 'Réception validée',
 ];

@@ -33,7 +33,7 @@
                         <div class="fw-semibold">{{ $e->nom }}</div>
                         <small class="text-muted">{{ $e->email ?? '—' }}</small>
                     </td>
-                    <td><span class="badge bg-light text-dark border">{{ ucfirst($e->type) }}</span></td>
+                    <td><span class="badge bg-light text-dark border">{{ __('admin.etab_type_' . $e->type) }}</span></td>
                     <td>{{ $e->ville ?? '—' }}</td>
                     <td>{{ $e->nombre_lits }}</td>
                     <td class="text-center">{{ $e->users_count }}</td>

@@ -152,7 +152,7 @@
                 @foreach($parStructure as $e)
                 <tr>
                     <td class="fw-semibold">{{ $e->nom }}</td>
-                    <td><span class="badge bg-light text-dark border">{{ ucfirst($e->type) }}</span></td>
+                    <td><span class="badge bg-light text-dark border">{{ __('admin.etab_type_' . $e->type) }}</span></td>
                     <td class="text-end">{{ number_format($e->declarations_mois) }}</td>
                     <td class="text-end">{{ number_format($e->poids_mois,1) }}</td>
                     <td style="min-width:140px;">
@@ -244,7 +244,8 @@
                     <td><code>{{ $d->certificat_numero ?? '—' }}</code></td>
                     <td>{{ $d->etablissement_nom ?? '—' }}</td>
                     <td>{{ number_format($d->poids_reel_kg, 1) }} kg</td>
-                    <td>{{ ucfirst(str_replace('_',' ',$d->methode)) }}</td>
+                    @php $methodKey = match($d->methode){'incineration'=>'incineration','autoclave'=>'autoclave','desinfection_chimique'=>'desinfection','autre'=>'other',default=>'other'}; @endphp
+                    <td>{{ __('destructions.method_' . $methodKey) }}</td>
                     <td><span class="badge bg-{{ $d->conforme ? 'success' : 'danger' }}">{{ $d->conforme ? __('superadmin.badge_conform') : __('superadmin.badge_nonconform') }}</span></td>
                     <td><small>{{ \Carbon\Carbon::parse($d->date_destruction)->format('d/m/Y') }}</small></td>
                 </tr>

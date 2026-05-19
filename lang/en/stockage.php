@@ -61,4 +61,13 @@ return [
     'reminder_warning'   => '⚠️ Declarations already linked to an ongoing transfer are not listed.',
     'flash_created'   => 'Transfer saved — :count container(s) | :weight kg.',
     'flash_validated' => 'Central storage reception validated ✓',
+
+    // Show (transfer detail)
+    'page_show_title'   => 'Transfer',
+    'show_header'       => 'Transfer',
+    'show_zone'         => 'Zone:',
+    'show_deadline'     => 'Deadline:',
+    'show_status'       => 'Status:',
+    'btn_validate_receipt' => 'Validate receipt',
+    'btn_receipt_validated' => 'Receipt validated',
 ];

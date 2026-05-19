@@ -4,7 +4,7 @@
 <div class="page-header d-flex justify-content-between align-items-center">
     <div>
         <h4 class="fw-bold mb-0"><i class="bi bi-hospital me-2 text-success"></i>{{ $etab->nom }}</h4>
-        <small class="text-muted">{{ __('superadmin.detail_subtitle', ['type' => ucfirst($etab->type), 'city' => $etab->ville, 'beds' => $etab->nombre_lits]) }}</small>
+        <small class="text-muted">{{ __('superadmin.detail_subtitle', ['type' => __('admin.etab_type_' . $etab->type), 'city' => $etab->ville, 'beds' => $etab->nombre_lits]) }}</small>
     </div>
     <div class="d-flex gap-2">
         <form method="POST" action="{{ route('superadmin.switch-tenant', $etab->id) }}">
