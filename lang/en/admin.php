@@ -128,6 +128,7 @@ return [
     'flash_etab_status_activated' => 'activated',
     'flash_etab_status_deactivated' => 'deactivated',
     'flash_etab_delete_blocked' => 'Cannot delete: :count active user(s) attached. Deactivate them first.',
+    'flash_etab_delete_has_records' => 'Cannot delete: this establishment has history (declarations, collections, destructions or signatures) including legal documents. Deactivate it instead of deleting it.',
     'flash_user_created'        => 'User created.',
     'flash_user_updated'        => 'User updated.',
     'flash_user_deleted'        => 'User deleted.',

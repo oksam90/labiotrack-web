@@ -136,6 +136,21 @@ class AdminController extends Controller
         if ($usersActifs > 0) {
             return back()->with('error', __('admin.flash_etab_delete_blocked', ['count' => $usersActifs]));
         }
+
+        // SECURITY / conformité : la suppression déclenche un CASCADE sur
+        // declarations, collectes, destructions et signatures — dont des
+        // documents légaux (certificats de destruction, signatures
+        // électroniques). On refuse la suppression dès qu'un historique existe
+        // et on oriente vers la désactivation (toggle), réversible et non
+        // destructive.
+        $aHistorique = DB::table('declarations')->where('etablissement_id', $id)->exists()
+            || DB::table('collectes')->where('etablissement_id', $id)->exists()
+            || DB::table('destructions')->where('etablissement_id', $id)->exists()
+            || DB::table('signatures')->where('etablissement_id', $id)->exists();
+        if ($aHistorique) {
+            return back()->with('error', __('admin.flash_etab_delete_has_records'));
+        }
+
         DB::table('etablissements')->where('id', $id)->delete();
         return redirect()->route('admin.index')->with('success', __('admin.flash_etab_deleted'));
     }

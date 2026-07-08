@@ -71,7 +71,11 @@ class ReseauScope implements Scope
             // qhse / agent → filtre par leur établissement
             if ($user->etablissement_id) {
                 $builder->where("$table.etablissement_id", $user->etablissement_id);
+                return;
             }
+
+            // fail-closed : utilisateur local sans établissement → rien
+            $builder->whereRaw('1 = 0');
         }
     }
 

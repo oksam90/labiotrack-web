@@ -54,4 +54,5 @@ return [
     'flash_updated' => 'Network updated.',
     'flash_deleted' => 'Network deleted.',
     'errors_delete_has_etabs' => 'Cannot delete this network: it still contains establishments.',
+    'errors_delete_has_users' => 'Cannot delete this network: users are still attached to it (collector, provider or NetworkAdmin). Reassign them to another network or remove them first.',
 ];

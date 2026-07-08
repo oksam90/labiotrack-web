@@ -75,6 +75,11 @@ class TenantScope implements Scope
             } else {
                 $builder->where("$table.etablissement_id", $user->etablissement_id);
             }
+            return;
         }
+
+        // SECURITY (fail-closed) : utilisateur local sans établissement
+        // (compte orphelin/mal configuré) → ne voit RIEN plutôt que TOUT.
+        $builder->whereRaw('1 = 0');
     }
 }

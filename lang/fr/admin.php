@@ -128,6 +128,7 @@ return [
     'flash_etab_status_activated' => 'activé',
     'flash_etab_status_deactivated' => 'désactivé',
     'flash_etab_delete_blocked' => 'Impossible : :count utilisateur(s) actif(s) rattaché(s). Désactivez-les d\'abord.',
+    'flash_etab_delete_has_records' => 'Suppression impossible : cet établissement possède un historique (déclarations, collectes, destructions ou signatures) incluant des documents légaux. Désactivez-le plutôt que de le supprimer.',
     'flash_user_created'        => 'Utilisateur créé.',
     'flash_user_updated'        => 'Utilisateur mis à jour.',
     'flash_user_deleted'        => 'Utilisateur supprimé.',

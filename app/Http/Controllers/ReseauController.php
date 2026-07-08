@@ -99,6 +99,16 @@ class ReseauController extends Controller
             return back()->with('error', __('reseaux.errors_delete_has_etabs'));
         }
 
+        // Intégrité : des utilisateurs peuvent être rattachés directement au
+        // réseau (collecteur, prestataire, admin_reseau via users.reseau_id).
+        // La FK étant en ON DELETE SET NULL, les supprimer orphelinerait ces
+        // comptes (reseau_id = NULL) qui, étant réseau-scopés (fail-closed),
+        // n'auraient alors plus accès à rien. On bloque tant qu'ils ne sont
+        // pas réaffectés à un autre réseau ou supprimés.
+        if ($reseau->users()->count() > 0) {
+            return back()->with('error', __('reseaux.errors_delete_has_users'));
+        }
+
         $reseau->delete();
         return redirect()->route('reseaux.index')
             ->with('success', __('reseaux.flash_deleted'));

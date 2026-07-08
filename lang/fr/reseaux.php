@@ -54,4 +54,5 @@ return [
     'flash_updated' => 'Réseau mis à jour.',
     'flash_deleted' => 'Réseau supprimé.',
     'errors_delete_has_etabs' => 'Impossible de supprimer ce réseau : il contient encore des établissements.',
+    'errors_delete_has_users' => 'Impossible de supprimer ce réseau : des utilisateurs y sont encore rattachés (collecteur, prestataire ou AdminRéseau). Réaffectez-les à un autre réseau ou supprimez-les d’abord.',
 ];
