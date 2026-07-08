@@ -46,6 +46,8 @@ class DeclarationPolicy
         if ($declaration->statut !== 'en_stock') return false;
 
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : ne créent ni ne modifient de déclaration
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($declaration->etablissement_id);
         }
@@ -64,6 +66,8 @@ class DeclarationPolicy
         if ($declaration->statut !== 'en_stock') return false;
 
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : ne suppriment pas de déclaration
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($declaration->etablissement_id);
         }

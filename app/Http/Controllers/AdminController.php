@@ -179,7 +179,10 @@ class AdminController extends Controller
         $user  = Auth::user();
         $query = DB::table('users')
             ->leftJoin('etablissements', 'users.etablissement_id', '=', 'etablissements.id')
-            ->leftJoin('reseaux', 'etablissements.reseau_id', '=', 'reseaux.id')
+            // Le réseau se résout soit directement via users.reseau_id (collecteur,
+            // prestataire, admin_reseau — sans établissement fixe), soit via
+            // l'établissement de rattachement (qhse, agent, admin local).
+            ->leftJoin('reseaux', 'reseaux.id', '=', DB::raw('COALESCE(users.reseau_id, etablissements.reseau_id)'))
             ->select('users.*', 'etablissements.nom as etablissement_nom', 'reseaux.nom as reseau_nom')
             ->orderByDesc('users.created_at');
 
@@ -271,6 +274,13 @@ class AdminController extends Controller
             abort(422, __('admin.errors_client_signataire_needs_etab'));
         }
 
+        // collecteur / prestataire : SÉCURITÉ — rattachement réseau obligatoire.
+        // Leur périmètre = tous les établissements de CE réseau ; sans réseau
+        // ils ne verraient rien (fail-closed) → on bloque à la création.
+        if (in_array($request->role, ['collecteur', 'prestataire'], true) && ! $reseauId) {
+            abort(422, __('admin.errors_collecteur_needs_reseau'));
+        }
+
         DB::table('users')->insert([
             'etablissement_id' => $etabId,
             'reseau_id'        => $reseauId,
@@ -337,6 +347,11 @@ class AdminController extends Controller
         $data['etablissement_id'] = $data['etablissement_id'] ?: null;
         $data['reseau_id']        = $data['reseau_id'] ?: null;
         $data['telephone']        = $data['telephone'] ?: null;
+
+        // collecteur / prestataire : rattachement réseau obligatoire (cf. storeUser)
+        if (in_array($request->role, ['collecteur', 'prestataire'], true) && ! $data['reseau_id']) {
+            abort(422, __('admin.errors_collecteur_needs_reseau'));
+        }
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }

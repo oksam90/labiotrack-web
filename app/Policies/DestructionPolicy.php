@@ -15,12 +15,15 @@ class DestructionPolicy
 
     public function view(User $user, Destruction $destruction): bool
     {
-        if ($user->isSuperAdmin())   return true;
-        if ($user->isPrestataire())  return true;
+        if ($user->isSuperAdmin()) return true;
+        // collecteur : non concerné par la destruction (rôle du prestataire)
+        if ($user->isCollecteur()) return false;
 
         $etabId = $destruction->getAttribute('etablissement_id')
                 ?? optional($destruction->collecte)->etablissement_id;
 
+        // prestataire + admin / admin_reseau → périmètre réseau
+        // (le prestataire n'a plus une vue globale : il est cantonné à son réseau)
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant((int) $etabId);
         }

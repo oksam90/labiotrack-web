@@ -72,4 +72,6 @@ return [
     'empty_list'        => 'No collections recorded',
     'created_success'   => 'Collection created — Manifest no. :ref',
     'cannot_determine_etab' => 'Unable to determine the establishment.',
+    'declarations_out_of_scope' => 'Some selected declarations do not belong to your network.',
+    'collecteur_out_of_scope' => 'The selected collector does not belong to your network.',
 ];

@@ -39,9 +39,11 @@ class AuthController extends Controller
                 return redirect()->route('collectes.index');
             }
 
-            // Tous les utilisateurs globaux sans établissement fixe → dashboard réseau
-            // Cela inclut : superadmin, admin, collecteur, prestataire
-            if ($user->isGlobal() && ! $user->etablissement_id) {
+            // Utilisateurs sans établissement fixe → vue réseau.
+            // superadmin (tous réseaux) + collecteur/prestataire (leur réseau).
+            // collecteur/prestataire ne sont plus isGlobal → on les liste ici.
+            if (in_array($user->role, ['superadmin', 'collecteur', 'prestataire'], true)
+                && ! $user->etablissement_id) {
                 return redirect()->route('superadmin.index');
             }
 

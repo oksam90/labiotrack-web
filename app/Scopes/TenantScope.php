@@ -49,8 +49,14 @@ class TenantScope implements Scope
         // Vue globale → pas de filtre
         if ($user->isGlobal()) return;
 
-        // Vue réseau (admin / admin_reseau)
-        if ($user->isReseauScoped() && $user->reseau_id) {
+        // Vue réseau (admin, admin_reseau, collecteur, prestataire)
+        if ($user->isReseauScoped()) {
+            // SECURITY (fail-closed) : un rôle réseau sans reseau_id ne
+            // voit RIEN plutôt que TOUT.
+            if (! $user->reseau_id) {
+                $builder->whereRaw('1 = 0');
+                return;
+            }
             if ($table === 'etablissements') {
                 $builder->where("$table.reseau_id", $user->reseau_id);
             } else {

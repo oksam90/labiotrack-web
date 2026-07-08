@@ -47,7 +47,13 @@ class CollecteController extends Controller
         $user->filtreEtab($decQuery, 'declarations.etablissement_id');
         $declarationsDisponibles = $decQuery->get();
 
-        $collecteurs = DB::table('users')->where('role', 'collecteur')->where('actif', 1)->get();
+        // Collecteurs assignables : limités au réseau du créateur (les
+        // collecteurs sont rattachés via users.reseau_id). Superadmin → tous.
+        $collecteursQ = DB::table('users')->where('role', 'collecteur')->where('actif', 1);
+        if (! $user->isGlobal() && $user->reseau_id) {
+            $collecteursQ->where('reseau_id', $user->reseau_id);
+        }
+        $collecteurs = $collecteursQ->get();
         return view('collectes.create', compact('declarationsDisponibles', 'collecteurs'));
     }
 
@@ -64,9 +70,29 @@ class CollecteController extends Controller
             'photo'           => 'nullable|image|max:5120',
         ]);
 
-        $user         = Auth::user();
-        $declarations = DB::table('declarations')
-            ->whereIn('id', $request->declarations)->get();
+        $user      = Auth::user();
+        // SECURITY : DB::table() contourne les global scopes Eloquent — on
+        // applique donc explicitement le périmètre réseau/établissement de
+        // l'utilisateur pour qu'un collecteur ne puisse pas collecter des
+        // déclarations situées hors de son réseau de rattachement.
+        $declQuery = DB::table('declarations')->whereIn('id', $request->declarations);
+        $user->filtreEtab($declQuery, 'etablissement_id');
+        $declarations = $declQuery->get();
+
+        // Si des IDs demandés ne ressortent pas → hors périmètre → on refuse.
+        if ($declarations->count() !== count(array_unique($request->declarations))) {
+            return back()->withErrors(['declarations' => __('collectes.declarations_out_of_scope')]);
+        }
+
+        // SECURITY : un collecteur assigné doit relever du même réseau que le
+        // créateur (empêche l'assignation cross-réseau via un POST forgé).
+        if ($request->collecteur_id && ! $user->isGlobal() && $user->reseau_id) {
+            $assigne = DB::table('users')->where('id', $request->collecteur_id)
+                ->where('role', 'collecteur')->first();
+            if (! $assigne || (int) $assigne->reseau_id !== (int) $user->reseau_id) {
+                return back()->withErrors(['collecteur_id' => __('collectes.collecteur_out_of_scope')]);
+            }
+        }
 
         $totalContenants = $declarations->sum('nombre_contenants');
         $totalPoids      = $declarations->sum('poids_estime_kg');
@@ -77,11 +103,12 @@ class CollecteController extends Controller
             $photoPath = $request->file('photo')->store('collectes/photos', 'public');
         }
 
-        // Pour les utilisateurs globaux (admin, superadmin, collecteur, prestataire),
-        // l'établissement vient de la première déclaration collectée
-        $etabId = $user->isGlobal()
-            ? ($declarations->first()->etablissement_id ?? null)
-            : $user->etablissement_id;
+        // Établissement de la collecte : celui de l'utilisateur s'il en a un
+        // (qhse, agent), sinon celui de la déclaration collectée (superadmin,
+        // collecteur, prestataire — sans établissement fixe). Les déclarations
+        // ont déjà été filtrées au périmètre de l'utilisateur ci-dessus.
+        $etabId = $user->etablissement_id
+            ?: ($declarations->first()->etablissement_id ?? null);
 
         if (! $etabId) {
             return back()->withErrors(['declarations' => __('collectes.cannot_determine_etab')]);

@@ -61,23 +61,27 @@ class User extends Authenticatable
     public function isClientSignataire() : bool { return $this->role === 'client_signataire'; }
 
     /**
-     * Vue GLOBALE = tous réseaux. Réservé au superadmin et aux rôles
-     * inter-réseaux (collecteur, prestataire) qui opèrent sur l'ensemble
-     * des structures sans rattachement réseau.
+     * Vue GLOBALE = tous réseaux, aucun filtre. Réservé au superadmin.
+     *
+     * NB : collecteur et prestataire NE SONT PLUS globaux — ils sont
+     * rattachés à un réseau (users.reseau_id) et cantonnés à l'ensemble
+     * des établissements de CE réseau (cf. isReseauScoped()).
      */
     public function isGlobal(): bool
     {
-        return in_array($this->role, ['superadmin', 'collecteur', 'prestataire']);
+        return $this->role === 'superadmin';
     }
 
     /**
-     * Vue limitée à UN RÉSEAU (et ses établissements).
-     * L'AdminRéseau et l'admin local sont rattachés à un réseau via
-     * leur etablissement_id ou directement via reseau_id.
+     * Vue limitée à UN RÉSEAU (et l'ensemble de ses établissements).
+     *  - admin_reseau / admin     : administration à la maille réseau
+     *  - collecteur / prestataire : opèrent sur tous les établissements
+     *                               de leur réseau de rattachement
+     * Le réseau est résolu via reseau_id (direct) ou etablissement.reseau_id.
      */
     public function isReseauScoped(): bool
     {
-        return in_array($this->role, ['admin_reseau', 'admin']);
+        return in_array($this->role, ['admin_reseau', 'admin', 'collecteur', 'prestataire']);
     }
 
     /**
@@ -108,11 +112,12 @@ class User extends Authenticatable
         if ($this->isSuperAdmin()) return true;
 
         if ($this->isReseauScoped()) {
-            $etab = Etablissement::find($etablissementId);
-            return $etab && $etab->reseau_id === $this->reseau_id;
+            // withoutGlobalScopes : évite que le TenantScope d'Etablissement
+            // ne redéclenche canAccessTenant via le bloc "zoom session"
+            // (récursion) et garantit une comparaison réseau fiable.
+            $etab = Etablissement::withoutGlobalScopes()->find($etablissementId);
+            return $etab && (int) $etab->reseau_id === (int) $this->reseau_id;
         }
-
-        if (in_array($this->role, ['collecteur', 'prestataire'])) return true;
 
         return $this->etablissement_id === $etablissementId;
     }

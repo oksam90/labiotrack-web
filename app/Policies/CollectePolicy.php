@@ -38,6 +38,8 @@ class CollectePolicy
     public function delete(User $user, Collecte $collecte): bool
     {
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : rôles opérationnels, pas de suppression
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($collecte->etablissement_id);
         }
@@ -63,17 +65,20 @@ class CollectePolicy
 
         if ($user->isSuperAdmin()) return true;
 
+        // collecteur / agent : uniquement la collecte qui LEUR est assignée
+        // (règle plus fine que le simple périmètre réseau — priorité).
+        if ($user->isCollecteur() || $user->role === 'agent') {
+            return $collecte->collecteur_id !== null
+                && (int) $collecte->collecteur_id === (int) $user->id;
+        }
+
+        // admin, admin_reseau, prestataire → périmètre réseau
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($collecte->etablissement_id);
         }
 
         if ($user->isQhse() || $user->isClientSignataire()) {
             return (int) $user->etablissement_id === (int) $collecte->etablissement_id;
-        }
-
-        if ($user->isCollecteur() || $user->role === 'agent') {
-            return $collecte->collecteur_id !== null
-                && (int) $collecte->collecteur_id === (int) $user->id;
         }
 
         return false;

@@ -149,6 +149,7 @@ return [
     'errors_admin_reseau_create_superadmin_only' => 'Seul le superadmin peut créer un AdminRéseau.',
     'errors_admin_reseau_promote_superadmin_only' => 'Seul le superadmin peut désigner un AdminRéseau.',
     'errors_client_signataire_needs_etab' => 'Le rôle Client signataire requiert un établissement.',
+    'errors_collecteur_needs_reseau'     => 'Les rôles Collecteur et Prestataire requièrent le rattachement à un réseau.',
     'errors_user_not_in_network'         => "Cet utilisateur n'appartient pas à votre réseau.",
     'errors_cant_delete_self'            => 'Vous ne pouvez pas supprimer votre propre compte.',
     'errors_cant_deactivate_self'        => 'Vous ne pouvez pas désactiver votre propre compte.',

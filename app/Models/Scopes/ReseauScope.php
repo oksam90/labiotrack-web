@@ -37,6 +37,13 @@ class ReseauScope implements Scope
         $table   = $model->getTable();
         $columns = $this->getModelColumns($model);
 
+        // SECURITY (fail-closed) : un rôle réseau (admin_reseau, admin,
+        // collecteur, prestataire) sans reseau_id ne voit RIEN plutôt que TOUT.
+        if ($user->isReseauScoped() && ! $user->reseau_id) {
+            $builder->whereRaw('1 = 0');
+            return;
+        }
+
         // Override par session : si l'utilisateur a "zoomé" sur un
         // établissement précis (admin_tenant_id), on ne filtre pas
         // davantage que la pile de middlewares ne le ferait déjà.

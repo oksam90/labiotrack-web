@@ -37,16 +37,19 @@ class SignaturePolicy
      */
     public function view(User $user, Signature $signature): bool
     {
-        if ($user->isGlobal()) return true;
+        if ($user->isSuperAdmin()) return true;
+        // collecteur / agent : uniquement les signatures de LEURS collectes
+        // (priorité sur le périmètre réseau).
+        if ($user->isCollecteur() || $user->role === 'agent') {
+            return $signature->collecte
+                && (int) $signature->collecte->collecteur_id === (int) $user->id;
+        }
+        // admin, admin_reseau, prestataire → périmètre réseau
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($signature->etablissement_id);
         }
         if ($user->isQhse() || $user->isClientSignataire()) {
             return (int) $user->etablissement_id === (int) $signature->etablissement_id;
-        }
-        if ($user->isCollecteur() || $user->role === 'agent') {
-            return $signature->collecte
-                && (int) $signature->collecte->collecteur_id === (int) $user->id;
         }
         return false;
     }

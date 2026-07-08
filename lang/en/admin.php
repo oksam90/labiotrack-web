@@ -149,6 +149,7 @@ return [
     'errors_admin_reseau_create_superadmin_only' => 'Only the superadmin can create a NetworkAdmin.',
     'errors_admin_reseau_promote_superadmin_only' => 'Only the superadmin can designate a NetworkAdmin.',
     'errors_client_signataire_needs_etab' => 'The Client signer role requires an establishment.',
+    'errors_collecteur_needs_reseau'     => 'The Collector and Provider roles require attachment to a network.',
     'errors_user_not_in_network'         => 'This user does not belong to your network.',
     'errors_cant_delete_self'            => 'You cannot delete your own account.',
     'errors_cant_deactivate_self'        => 'You cannot deactivate your own account.',

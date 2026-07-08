@@ -55,8 +55,12 @@ class DestructionController extends Controller
         $user          = Auth::user();
         $certificatNum = 'CERT-' . date('Y') . '-' . strtoupper(substr(uniqid(), -8));
 
-        // Récupérer l'etablissement_id depuis la collecte associée
-        $collecte = DB::table('collectes')->where('id', $request->collecte_id)->firstOrFail();
+        // Récupérer l'etablissement_id depuis la collecte associée.
+        // SECURITY : filtreEtab empêche un prestataire de détruire une collecte
+        // située hors de son réseau (DB::table() ne passe pas par les scopes).
+        $collecteQuery = DB::table('collectes')->where('id', $request->collecte_id);
+        $user->filtreEtab($collecteQuery, 'etablissement_id');
+        $collecte = $collecteQuery->firstOrFail();
 
         $id = DB::table('destructions')->insertGetId([
             'collecte_id'       => $request->collecte_id,

@@ -17,6 +17,8 @@ class ChecklistPolicy
     public function view(User $user, Checklist $checklist): bool
     {
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : exclus des checklists internes
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($checklist->etablissement_id);
         }
@@ -33,6 +35,8 @@ class ChecklistPolicy
     public function update(User $user, Checklist $checklist): bool
     {
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : exclus des checklists internes
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($checklist->etablissement_id);
         }
@@ -42,6 +46,8 @@ class ChecklistPolicy
     public function delete(User $user, Checklist $checklist): bool
     {
         if ($user->isSuperAdmin()) return true;
+        // collecteur / prestataire : exclus des checklists internes
+        if ($user->isCollecteur() || $user->isPrestataire()) return false;
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($checklist->etablissement_id);
         }
