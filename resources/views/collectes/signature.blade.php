@@ -137,7 +137,7 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+<script src="{{ asset('vendor/js/signature_pad.umd.min.js') }}"></script>
 <script>
 (function () {
     const canvas       = document.getElementById('signature-canvas');

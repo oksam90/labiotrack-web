@@ -6,149 +6,13 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', __('nav.brand_platform')) — LaBioTrack</title>
 
-    <!-- Bootstrap 5 + Icons -->
+    <!-- Bootstrap 5 + Icons — bundlés via Vite (plus de CDN) -->
     <link rel="icon" type="image/png" href="{{ asset('labiotrack-favicon.png') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Chart.js auto-hébergé (script classique → window.Chart dispo pour les blocs inline) -->
+    <script src="{{ asset('vendor/js/chart.umd.min.js') }}"></script>
 
-    <style>
-        :root {
-            --primary:    #1B6B3A;
-            --primary-lt: #2E8B57;
-            --secondary:  #D4A017;
-            --danger:     #C0392B;
-            --warning:    #E67E22;
-            --info:       #2980B9;
-            --dark:       #1A2332;
-            --sidebar-w:  260px;
-        }
-        body { background:#F4F7F6; font-family:'Segoe UI',system-ui,sans-serif; }
-
-        /* ── SIDEBAR ── */
-        #sidebar {
-            position: fixed; top:0; left:0; height:100vh; width:var(--sidebar-w);
-            background: var(--dark);
-            overflow-y:auto; z-index:1000; transition:.3s;
-        }
-        .sidebar-brand {
-            padding:1.2rem 1.5rem;
-            background: linear-gradient(135deg,var(--primary),#0d4024);
-            color:#fff;
-        }
-        .sidebar-brand h6 { font-size:.65rem; opacity:.7; letter-spacing:.1em; text-transform:uppercase; }
-        .sidebar-brand h4 { font-size:1.1rem; font-weight:700; margin:0; }
-        .sidebar-brand .bi { font-size:1.6rem; }
-
-        .sidebar-section {
-            padding:.5rem 1rem .2rem;
-            font-size:.65rem; letter-spacing:.12em; text-transform:uppercase;
-            color:rgba(255,255,255,.35); font-weight:600;
-        }
-        .sidebar-link {
-            display:flex; align-items:center; gap:.7rem;
-            padding:.6rem 1.4rem; color:rgba(255,255,255,.75);
-            text-decoration:none; font-size:.88rem; transition:.15s;
-            border-left:3px solid transparent;
-        }
-        .sidebar-link:hover, .sidebar-link.active {
-            color:#fff; background:rgba(255,255,255,.07);
-            border-left-color: var(--secondary);
-        }
-        .sidebar-link .bi { font-size:1rem; width:20px; }
-        .badge-sidebar {
-            margin-left:auto; font-size:.65rem;
-            background:var(--danger); color:#fff; border-radius:10px; padding:.15rem .5rem;
-        }
-
-        /* ── MAIN CONTENT ── */
-        #main { margin-left:var(--sidebar-w); padding:1.5rem; }
-
-        /* ── TOP NAV ── */
-        .topbar {
-            background:#fff; border-bottom:1px solid #e5e9ef;
-            padding:.75rem 1.5rem; display:flex; align-items:center; gap:1rem;
-            margin:-1.5rem -1.5rem 1.5rem; position:sticky; top:0; z-index:100;
-        }
-        .topbar-title { font-weight:600; font-size:1.1rem; color:var(--dark); flex:1; }
-        .topbar .avatar {
-            width:36px; height:36px; border-radius:50%;
-            background: linear-gradient(135deg,var(--primary-lt),var(--secondary));
-            display:flex; align-items:center; justify-content:center;
-            color:#fff; font-weight:700; font-size:.85rem;
-        }
-        .role-badge {
-            font-size:.68rem; padding:.2rem .6rem; border-radius:20px; font-weight:600;
-            text-transform:uppercase; letter-spacing:.05em;
-        }
-        .role-superadmin { background:#2c3e50; color:#fff; }
-        .role-admin      { background:#8e44ad; color:#fff; }
-        .role-qhse       { background:var(--primary); color:#fff; }
-        .role-agent      { background:var(--info); color:#fff; }
-        .role-collecteur { background:var(--warning); color:#fff; }
-        .role-prestataire{ background:#7f8c8d; color:#fff; }
-
-        /* ── CARDS ── */
-        .stat-card {
-            background:#fff; border-radius:12px; padding:1.3rem 1.5rem;
-            border:1px solid #e5e9ef; position:relative; overflow:hidden;
-        }
-        .stat-card .icon {
-            width:52px; height:52px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center;
-            font-size:1.4rem;
-        }
-        .stat-card .value { font-size:1.8rem; font-weight:700; color:var(--dark); }
-        .stat-card .label { font-size:.82rem; color:#6b7280; margin-top:.1rem; }
-        .stat-card .trend { font-size:.78rem; font-weight:600; }
-        .trend-up   { color:#16a34a; }
-        .trend-down { color:#dc2626; }
-
-        /* ── TABLE ── */
-        .table { font-size:.88rem; }
-        .table thead th { background:#F4F7F6; font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; border-bottom:2px solid #e5e9ef; }
-
-        /* ── STATUT BADGES ── */
-        .statut-en_stock     { background:#d1fae5; color:#065f46; }
-        .statut-en_transport { background:#dbeafe; color:#1e40af; }
-        .statut-detruit      { background:#f3f4f6; color:#374151; }
-        .statut-annule       { background:#fee2e2; color:#991b1b; }
-        .statut-badge { font-size:.72rem; padding:.25rem .6rem; border-radius:20px; font-weight:600; }
-
-        /* ── FORMS ── */
-        .form-label { font-weight:600; font-size:.85rem; color:#374151; }
-        .form-control, .form-select { border:1.5px solid #e5e9ef; border-radius:8px; font-size:.9rem; }
-        .form-control:focus, .form-select:focus { border-color:var(--primary-lt); box-shadow:0 0 0 3px rgba(46,139,87,.12); }
-
-        /* ── ALERTS ── */
-        .alert-info    { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
-        .alert-success { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
-        .alert-warning { background:#fffbeb; border-color:#fde68a; color:#92400e; }
-        .alert-danger  { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
-
-        /* ── MOBILE ── */
-        @media(max-width:768px){
-            #sidebar { transform:translateX(-100%); }
-            #sidebar.show { transform:translateX(0); }
-            #main { margin-left:0; padding:1rem; }
-        }
-
-        .page-header { border-bottom:2px solid #e5e9ef; padding-bottom:1rem; margin-bottom:1.5rem; }
-        @keyframes pulse {
-            0%,100% { opacity:1; transform:scale(1); }
-            50%      { opacity:.5; transform:scale(1.3); }
-        }
-        .btn-primary { background:var(--primary); border-color:var(--primary); }
-        .btn-primary:hover { background:var(--primary-lt); border-color:var(--primary-lt); }
-        .card { border:1px solid #e5e9ef; border-radius:12px; }
-        .card-header { background:#F4F7F6; border-bottom:1px solid #e5e9ef; font-weight:600; }
-
-        /* ── PROGRESS CONFORMITÉ ── */
-        .score-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; }
-        .score-ring svg { transform:rotate(-90deg); }
-        .score-ring .score-text { position:absolute; font-weight:700; font-size:1.1rem; color:var(--dark); }
-    </style>
+    {{-- Design system LaBioTrack externalisé → resources/css/labiotrack.css (bundlé via @vite) --}}
     @stack('styles')
 </head>
 <body>
@@ -337,6 +201,9 @@
                 <div><span class="role-badge role-{{ Auth::user()->role }}">{{ Auth::user()->role }}</span></div>
             </div>
         </div>
+        <a href="{{ route('account.data') }}" class="btn btn-sm w-100 mt-2" style="background:rgba(255,255,255,.05);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.1);">
+            <i class="bi bi-person-vcard me-1"></i> {{ __('account.nav_link') }}
+        </a>
         <form action="{{ route('logout') }}" method="POST" class="mt-2">
             @csrf
             <button type="submit" class="btn btn-sm w-100" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1);">
@@ -410,16 +277,64 @@
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show">
             <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Erreurs :</strong>
+            <strong>{{ __('common.errors_label') }}</strong>
             <ul class="mb-0 mt-1">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
 
+    @include('partials.onboarding')
+
     @yield('content')
+
+    <!-- FOOTER LÉGAL -->
+    <footer class="mt-5 pt-3 pb-4 text-center" style="border-top:1px solid #e5e9ef;font-size:.8rem;color:#6b7280;">
+        <span>© {{ date('Y') }} LaBioTrack — {{ __('legal.footer_rights') }}</span>
+        <span class="mx-2">·</span>
+        <a href="{{ route('legal.mentions') }}" class="text-decoration-none" style="color:#1B6B3A;">{{ __('legal.nav_mentions') }}</a>
+        <span class="mx-2">·</span>
+        <a href="{{ route('legal.privacy') }}" class="text-decoration-none" style="color:#1B6B3A;">{{ __('legal.nav_privacy') }}</a>
+        <span class="mx-2">·</span>
+        <a href="{{ route('legal.cgu') }}" class="text-decoration-none" style="color:#1B6B3A;">{{ __('legal.nav_cgu') }}</a>
+    </footer>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- NOTICE COOKIES (cookies strictement nécessaires — informative, dismissible) -->
+<div id="cookie-notice" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1080;background:#1A2332;color:#e5e9ef;padding:.9rem 1.2rem;box-shadow:0 -4px 20px rgba(0,0,0,.2);">
+    <div class="d-flex flex-wrap align-items-center justify-content-center gap-2" style="font-size:.85rem;">
+        <span><i class="bi bi-shield-check me-1" style="color:#2E8B57;"></i>{{ __('legal.cookie_notice') }}</span>
+        <a href="{{ route('legal.privacy') }}" class="text-decoration-none" style="color:#D4A017;">{{ __('legal.cookie_more') }}</a>
+        <button type="button" id="cookie-ok" class="btn btn-sm btn-success py-0 px-3">{{ __('legal.cookie_ok') }}</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+        try {
+            var k = 'lbt_cookie_ack';
+            var el = document.getElementById('cookie-notice');
+            if (!localStorage.getItem(k)) { el.style.display = 'block'; }
+            document.getElementById('cookie-ok').addEventListener('click', function () {
+                localStorage.setItem(k, '1');
+                el.style.display = 'none';
+            });
+        } catch (e) { /* localStorage indisponible → on n'affiche rien */ }
+    })();
+
+    // État de chargement standardisé : au submit d'un formulaire (non annulé),
+    // désactive le bouton et affiche un spinner pour éviter les double-clics.
+    (function () {
+        // Phase bubbling (sans capture) → s'exécute APRÈS le handler de
+        // validation du formulaire ; on ignore si celui-ci a annulé le submit.
+        document.addEventListener('submit', function (e) {
+            if (e.defaultPrevented) return;
+            var btn = e.target.querySelector('button[type="submit"], button:not([type])');
+            if (!btn || btn.dataset.noSpinner !== undefined) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="lbt-spinner me-2"></span>' + btn.textContent.trim();
+        });
+    })();
+</script>
 @stack('scripts')
 </body>
 </html>

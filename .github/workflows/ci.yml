@@ -18,12 +18,14 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: labiotrack_test
+          # Root sans mot de passe → aligné avec phpunit.xml (DB_PASSWORD vide)
+          # et avec l'environnement de dev local (XAMPP). Base dédiée biomed_test.
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: biomed_test
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -ppassword"
+          --health-cmd="mysqladmin ping -h localhost"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
@@ -55,18 +57,12 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
-      - name: Configure test database
-        run: |
-          php artisan config:clear
-          sed -i 's/DB_DATABASE=.*/DB_DATABASE=labiotrack_test/' .env
-          sed -i 's/DB_USERNAME=.*/DB_USERNAME=root/' .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=password/' .env
-
-      - name: Run migrations
-        run: php artisan migrate --force
-
       - name: PHP Syntax Check
         run: find app config routes -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"  || true
 
+      # La config BDD des tests vient de phpunit.xml (mysql / biomed_test / root
+      # sans mot de passe). RefreshDatabase migre la base à chaque suite : pas
+      # besoin d'étape migrate séparée. Le manifest Vite (public/build) est
+      # versionné, donc les vues @vite se rendent en test.
       - name: Run tests
         run: php artisan test

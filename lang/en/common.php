@@ -82,6 +82,8 @@ return [
     'success_deleted' => 'Deleted successfully.',
     'success_updated' => 'Updated successfully.',
     'error_generic'   => 'An error occurred.',
+    'errors_label'    => 'Errors:',
+    'access_denied'   => 'Access denied: your role does not allow access to this section.',
     'confirm_delete'  => 'Confirm deletion?',
     'confirm_action'  => 'Confirm this action?',
 

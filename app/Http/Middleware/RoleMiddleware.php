@@ -17,7 +17,7 @@ class RoleMiddleware
         $user = Auth::user();
 
         if (! in_array($user->role, $roles)) {
-            abort(403, 'Accès non autorisé. Votre rôle ne vous permet pas d\'accéder à cette section.');
+            abort(403, __('common.access_denied'));
         }
 
         return $next($request);

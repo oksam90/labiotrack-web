@@ -5,7 +5,12 @@ namespace App\Providers;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\Declaration;
+use App\Models\DeclarationLigne;
 use App\Models\Collecte;
 use App\Models\Destruction;
 use App\Models\Checklist;
@@ -19,6 +24,7 @@ use App\Policies\EtablissementPolicy;
 use App\Policies\SignaturePolicy;
 use App\Models\Alerte;
 use App\Observers\DeclarationObserver;
+use App\Observers\DeclarationLigneObserver;
 use App\Observers\CollecteObserver;
 use App\Observers\ChecklistObserver;
 use App\Observers\AlerteObserver;
@@ -48,8 +54,20 @@ class AppServiceProvider extends ServiceProvider
         // ── Pagination Bootstrap 5 (le layout utilise Bootstrap, pas Tailwind)
         Paginator::useBootstrapFive();
 
+        // ── Rate limiter « login » (anti-brute-force) ────────
+        // 5 essais/min par couple (email + IP) + garde-fou 20/min par IP
+        // pour ralentir le credential-stuffing distribué sur plusieurs comptes.
+        RateLimiter::for('login', function (Request $request) {
+            $key = Str::lower((string) $request->input('email')) . '|' . $request->ip();
+            return [
+                Limit::perMinute(5)->by($key),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
+
         // ── Observers (activites_log matérialisée) ───────────
         Declaration::observe(DeclarationObserver::class);
+        DeclarationLigne::observe(DeclarationLigneObserver::class);
         Collecte::observe(CollecteObserver::class);
         Checklist::observe(ChecklistObserver::class);
         Alerte::observe(AlerteObserver::class);

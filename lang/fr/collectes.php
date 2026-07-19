@@ -15,7 +15,11 @@ return [
     // ── Actions / boutons ──────────────────────────────────────
     'btn_new'             => 'Nouvelle collecte',
     'btn_create_and_pdf'  => 'Créer la collecte & générer le bordereau',
-    'btn_bordereau_pdf'   => 'Bordereau PDF',
+    'btn_bordereau_pdf'        => 'Générer le bordereau PDF',
+    'btn_bordereau_download'   => 'Télécharger le bordereau',
+    'btn_bordereau_regenerate' => 'Régénérer',
+    'bordereau_preparing'      => 'Bordereau en cours de préparation. Il sera disponible au téléchargement dans quelques instants — actualisez la page.',
+    'bordereau_not_ready'      => 'Le bordereau n’est pas encore prêt. Réessayez dans quelques instants.',
     'btn_view'            => 'Voir détail',
     'btn_sign'            => 'Signature électronique',
     'btn_signer_short'    => 'Signer le bordereau',

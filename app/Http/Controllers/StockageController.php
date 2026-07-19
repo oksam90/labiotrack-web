@@ -45,8 +45,9 @@ class StockageController extends Controller
         $user = Auth::user();
 
         $declarations = DB::table('declarations')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+            ->leftJoin('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->leftJoin('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->leftJoin('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
             ->leftJoin('transfert_declarations', 'declarations.id', '=', 'transfert_declarations.declaration_id')
             ->leftJoin('transferts', function ($join) {
                 $join->on('transfert_declarations.transfert_id', '=', 'transferts.id')
@@ -56,7 +57,10 @@ class StockageController extends Controller
             ->where('declarations.statut', 'en_stock')
             ->select('declarations.id', 'declarations.nombre_contenants',
                 'declarations.poids_estime_kg', 'declarations.date_declaration',
-                'services.nom as service_nom', 'type_contenants.nom as contenant_nom')
+                DB::raw("GROUP_CONCAT(DISTINCT services.nom ORDER BY services.nom SEPARATOR ', ') as service_nom"),
+                DB::raw("GROUP_CONCAT(DISTINCT type_contenants.nom ORDER BY type_contenants.nom SEPARATOR ', ') as contenant_nom"))
+            ->groupBy('declarations.id', 'declarations.nombre_contenants',
+                'declarations.poids_estime_kg', 'declarations.date_declaration')
             ->orderByDesc('declarations.date_declaration');
 
         $user->filtreEtab($declarations, 'declarations.etablissement_id');
@@ -153,11 +157,19 @@ class StockageController extends Controller
         $user->filtreEtab($query, 'transferts.etablissement_id');
         $transfert = $query->firstOrFail();
 
+        // Une ligne par ligne de déclaration (service × contenant).
         $declarations = DB::table('transfert_declarations')
             ->join('declarations', 'transfert_declarations.declaration_id', '=', 'declarations.id')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-            ->select('declarations.*', 'services.nom as service_nom', 'type_contenants.nom as contenant_nom')
+            ->join('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
+            ->select(
+                'declarations.id',
+                'declaration_lignes.nombre_contenants',
+                'declaration_lignes.poids_estime_kg',
+                'services.nom as service_nom',
+                'type_contenants.nom as contenant_nom'
+            )
             ->where('transfert_declarations.transfert_id', $id)->get();
 
         return view('stockage.show', compact('transfert', 'declarations'));

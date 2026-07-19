@@ -4,8 +4,16 @@
 <div class="page-header d-flex justify-content-between align-items-center">
     <h4 class="fw-bold mb-0">{{ __('collectes.header_show') }} — <code>{{ $collecte->numero_bordereau }}</code></h4>
     <div class="d-flex gap-2">
-        <form method="POST" action="{{ route('collectes.bordereau', $collecte->id) }}">@csrf
-        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>{{ __('collectes.btn_bordereau_pdf') }}</button></form>
+        @if($collecte->bordereau_generated_at)
+            <a href="{{ route('collectes.bordereau.download', $collecte->id) }}" class="btn btn-danger btn-sm">
+                <i class="bi bi-file-pdf me-1"></i>{{ __('collectes.btn_bordereau_download') }}
+            </a>
+            <form method="POST" action="{{ route('collectes.bordereau', $collecte->id) }}" title="{{ __('collectes.btn_bordereau_regenerate') }}">@csrf
+            <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-clockwise"></i></button></form>
+        @else
+            <form method="POST" action="{{ route('collectes.bordereau', $collecte->id) }}">@csrf
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-pdf me-1"></i>{{ __('collectes.btn_bordereau_pdf') }}</button></form>
+        @endif
         @php
             $signature = \App\Models\Signature::where('collecte_id', $collecte->id)->first();
             // Hydrate un modèle Eloquent pour la policy (la $collecte courante

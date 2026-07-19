@@ -54,6 +54,21 @@ return [
     'form_modify_title'   => 'Edit declaration',
     'form_required_star'  => '*',
 
+    // Multi lines (service × container)
+    'lines_title'         => 'Declared containers',
+    'lines_hint'          => 'Add one line per producing service and container type.',
+    'line_service'        => 'Producing service',
+    'line_container'      => 'Container type',
+    'line_count'          => 'Full qty',
+    'line_weight'         => 'Weight',
+    'line_select_ph'      => '— Select —',
+    'btn_add_line'        => 'Add a line',
+    'btn_remove_line'     => 'Remove',
+    'total_weight'        => 'Total estimated weight',
+    'total_containers'    => 'Total containers',
+    'error_min_one_line'  => 'Add at least one complete line (service, container, quantity).',
+    'error_incomplete_line' => 'A line is incomplete: set the service, the container and a quantity ≥ 1.',
+
     // Summary
     'summary_title'       => 'Automatic summary',
     'summary_service'     => 'Service',
@@ -75,6 +90,7 @@ return [
     'show_qr_traceability'   => 'Traceability QR Code',
     'show_automated'         => 'Automated:',
     'show_automated_detail'  => 'Estimated weight calculated (:rate kg × :count) — QR code generated — Timestamp recorded',
+    'show_automated_multi'   => 'Estimated weight calculated per line (average weight × quantity) — QR code generated — Timestamp recorded',
 
     // Flash / errors
     'flash_created'        => 'Declaration saved — :count container(s) | :weight kg estimated.',

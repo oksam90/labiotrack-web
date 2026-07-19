@@ -54,6 +54,21 @@ return [
     'form_modify_title'   => 'Modifier la déclaration',
     'form_required_star'  => '*',
 
+    // Lignes multi (service × contenant)
+    'lines_title'         => 'Contenants déclarés',
+    'lines_hint'          => 'Ajoutez une ligne par service producteur et type de contenant.',
+    'line_service'        => 'Service producteur',
+    'line_container'      => 'Type de contenant',
+    'line_count'          => 'Nb pleins',
+    'line_weight'         => 'Poids',
+    'line_select_ph'      => '— Choisir —',
+    'btn_add_line'        => 'Ajouter une ligne',
+    'btn_remove_line'     => 'Retirer',
+    'total_weight'        => 'Poids total estimé',
+    'total_containers'    => 'Total contenants',
+    'error_min_one_line'  => 'Ajoutez au moins une ligne complète (service, contenant, nombre).',
+    'error_incomplete_line' => 'Une ligne est incomplète : renseignez le service, le contenant et un nombre ≥ 1.',
+
     // Résumé
     'summary_title'       => 'Résumé automatique',
     'summary_service'     => 'Service',
@@ -75,6 +90,7 @@ return [
     'show_qr_traceability'   => 'QR Code de traçabilité',
     'show_automated'         => 'Automatisé :',
     'show_automated_detail'  => 'Poids estimé calculé (:rate kg × :count) — QR code généré — Horodatage enregistré',
+    'show_automated_multi'   => 'Poids estimé calculé par ligne (poids moyen × nombre) — QR code généré — Horodatage enregistré',
 
     // Flash / errors
     'flash_created'        => 'Déclaration enregistrée — :count contenant(s) | :weight kg estimé.',

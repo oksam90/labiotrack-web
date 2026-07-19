@@ -7,85 +7,52 @@
 </div>
 
 <div class="row justify-content-center">
-    <div class="col-md-7">
-        <!-- Indicateur étapes -->
-        <div class="d-flex align-items-center gap-2 mb-4">
-            <div class="d-flex align-items-center gap-1">
-                <div style="width:28px;height:28px;border-radius:50%;background:#1B6B3A;color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;">1</div>
-                <span style="font-size:.82rem;font-weight:600;color:#1B6B3A;">{{ __('declarations.step_service') }}</span>
-            </div>
-            <div style="flex:1;height:2px;background:#e5e9ef;"></div>
-            <div class="d-flex align-items-center gap-1">
-                <div style="width:28px;height:28px;border-radius:50%;background:#e5e9ef;color:#9ca3af;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;">2</div>
-                <span style="font-size:.82rem;color:#9ca3af;">{{ __('declarations.step_container') }}</span>
-            </div>
-            <div style="flex:1;height:2px;background:#e5e9ef;"></div>
-            <div class="d-flex align-items-center gap-1">
-                <div style="width:28px;height:28px;border-radius:50%;background:#e5e9ef;color:#9ca3af;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;">3</div>
-                <span style="font-size:.82rem;color:#9ca3af;">{{ __('declarations.step_quantity') }}</span>
-            </div>
-        </div>
-
+    <div class="col-md-9">
         <div class="card">
             <div class="card-body p-4">
-                <form method="POST" action="{{ route('declarations.store') }}" enctype="multipart/form-data"
-                      data-i18n-estimated="{{ __('declarations.summary_estimated') }}">
+                @if($errors->any())
+                <div class="alert alert-danger py-2">
+                    <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+                </div>
+                @endif
+
+                <form method="POST" action="{{ route('declarations.store') }}" enctype="multipart/form-data" id="decl-form" novalidate>
                     @csrf
 
-                    <!-- ÉTAPE 1 : SERVICE -->
-                    <div class="mb-4">
-                        <label class="form-label">
-                            <span class="badge bg-success me-1">1</span> {{ __('declarations.form_service_label') }} <span class="text-danger">*</span>
-                        </label>
-                        <div class="row g-2" id="services-grid">
-                            @foreach($services as $s)
-                            <div class="col-6 col-md-4">
-                                <input type="radio" name="service_id" value="{{ $s->id }}" id="svc_{{ $s->id }}" class="d-none service-radio" {{ old('service_id')==$s->id ? 'checked' : '' }} required>
-                                <label for="svc_{{ $s->id }}" class="service-btn w-100 text-center p-3 rounded border cursor-pointer" style="cursor:pointer;transition:.15s;">
-                                    <i class="bi bi-hospital d-block mb-1 fs-5"></i>
-                                    <small>{{ $s->nom }}</small>
-                                </label>
-                            </div>
-                            @endforeach
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <label class="form-label mb-0 fw-bold">{{ __('declarations.lines_title') }} <span class="text-danger">*</span></label>
+                            <small class="text-muted d-block">{{ __('declarations.lines_hint') }}</small>
                         </div>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-line">
+                            <i class="bi bi-plus-lg me-1"></i>{{ __('declarations.btn_add_line') }}
+                        </button>
                     </div>
 
-                    <!-- ÉTAPE 2 : TYPE CONTENANT -->
-                    <div class="mb-4">
-                        <label class="form-label">
-                            <span class="badge bg-success me-1">2</span> {{ __('declarations.form_container_type') }} <span class="text-danger">*</span>
-                        </label>
-                        <div class="row g-2">
-                            @foreach($typeContenants as $tc)
-                            <div class="col-6 col-md-4">
-                                <input type="radio" name="type_contenant_id" value="{{ $tc->id }}" id="tc_{{ $tc->id }}" class="d-none contenant-radio" data-poids="{{ $tc->poids_moyen_kg }}" {{ old('type_contenant_id')==$tc->id ? 'checked' : '' }} required>
-                                <label for="tc_{{ $tc->id }}" class="contenant-btn w-100 p-2 rounded border text-center" style="cursor:pointer;font-size:.82rem;transition:.15s;">
-                                    @php
-                                        $emoji = str_contains(strtolower($tc->nom),'boite')||str_contains(strtolower($tc->nom),'box') ? '📦' : (str_contains(strtolower($tc->nom),'jaune') ? '🟡' : (str_contains(strtolower($tc->nom),'noir') ? '⚫' : '🔴'));
-                                    @endphp
-                                    <span class="d-block fs-4">{{ $emoji }}</span>
-                                    <strong>{{ $tc->nom }}</strong><br>
-                                    <span class="text-muted">~{{ $tc->poids_moyen_kg }} {{ __('declarations.form_kg_per_unit') }}</span>
-                                </label>
-                            </div>
-                            @endforeach
-                        </div>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle" id="lignes-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width:180px;">{{ __('declarations.line_service') }}</th>
+                                    <th style="min-width:200px;">{{ __('declarations.line_container') }}</th>
+                                    <th style="width:120px;">{{ __('declarations.line_count') }}</th>
+                                    <th class="text-end" style="width:110px;">{{ __('declarations.line_weight') }}</th>
+                                    <th style="width:44px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="lignes-body"><!-- lignes injectées par JS --></tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="2" class="text-end">{{ __('declarations.total_containers') }} :
+                                        <span id="total-nb" class="text-success">0</span></th>
+                                    <th class="text-end">{{ __('declarations.total_weight') }} :</th>
+                                    <th class="text-end text-primary fw-bold"><span id="total-poids">0</span> kg</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
 
-                    <!-- ÉTAPE 3 : QUANTITÉ -->
-                    <div class="mb-4">
-                        <label class="form-label">
-                            <span class="badge bg-success me-1">3</span> {{ __('declarations.form_container_full_count') }} <span class="text-danger">*</span>
-                        </label>
-                        <div class="d-flex align-items-center gap-3">
-                            <button type="button" class="btn btn-outline-secondary px-3" id="btn-moins">-</button>
-                            <input type="number" name="nombre_contenants" id="nombre_contenants" class="form-control text-center fw-bold fs-4" value="{{ old('nombre_contenants', 1) }}" min="1" max="999" required style="max-width:120px;">
-                            <button type="button" class="btn btn-outline-secondary px-3" id="btn-plus">+</button>
-                            <div class="text-muted" id="poids-preview" style="font-size:.88rem;"></div>
-                        </div>
-                    </div>
-
-                    <!-- NOTES & PHOTO (optionnel) -->
                     <div class="mb-3">
                         <label class="form-label">{{ __('declarations.form_notes') }}</label>
                         <textarea name="notes" class="form-control" rows="2" placeholder="{{ __('declarations.form_notes_ph') }}">{{ old('notes') }}</textarea>
@@ -95,29 +62,6 @@
                         <label class="form-label">{{ __('declarations.form_photo') }}</label>
                         <input type="file" name="photo" class="form-control" accept="image/*" capture="environment">
                         <small class="text-muted">{{ __('declarations.form_photo_hint') }}</small>
-                    </div>
-
-                    <!-- RÉSUMÉ AUTOMATIQUE -->
-                    <div class="p-3 rounded mb-4" style="background:#f0fdf4;border:2px solid #bbf7d0;" id="summary" style="display:none;">
-                        <div class="fw-bold mb-1 text-success"><i class="bi bi-check-circle me-1"></i>{{ __('declarations.summary_title') }}</div>
-                        <div class="row g-2 text-center">
-                            <div class="col-4">
-                                <div style="font-size:.75rem;color:#6b7280;">{{ __('declarations.summary_service') }}</div>
-                                <div id="sum-service" class="fw-semibold" style="font-size:.88rem;">—</div>
-                            </div>
-                            <div class="col-4">
-                                <div style="font-size:.75rem;color:#6b7280;">{{ __('declarations.summary_containers') }}</div>
-                                <div id="sum-nb" class="fw-bold text-success">0</div>
-                            </div>
-                            <div class="col-4">
-                                <div style="font-size:.75rem;color:#6b7280;">{{ __('declarations.summary_weight') }}</div>
-                                <div id="sum-poids" class="fw-bold text-primary">0 kg</div>
-                            </div>
-                        </div>
-                        <div class="mt-2" style="font-size:.75rem;color:#6b7280;">
-                            <i class="bi bi-clock me-1"></i>{{ __('declarations.summary_timestamp') }} {{ now()->format('d/m/Y H:i') }}
-                            &nbsp;&nbsp;<i class="bi bi-qr-code me-1"></i>{{ __('declarations.summary_qr_auto') }}
-                        </div>
                     </div>
 
                     <div class="d-flex gap-2">
@@ -131,53 +75,123 @@
         </div>
     </div>
 </div>
+
+{{-- Gabarit d'une ligne (cloné par JS) --}}
+<template id="ligne-template">
+    <tr class="ligne-row">
+        <td>
+            <select name="lignes[__I__][service_id]" class="form-select form-select-sm sel-service" required>
+                <option value="">{{ __('declarations.line_select_ph') }}</option>
+                @foreach($services as $s)
+                <option value="{{ $s->id }}">{{ $s->nom }}</option>
+                @endforeach
+            </select>
+        </td>
+        <td>
+            <select name="lignes[__I__][type_contenant_id]" class="form-select form-select-sm sel-contenant" required>
+                <option value="" data-poids="0">{{ __('declarations.line_select_ph') }}</option>
+                @foreach($typeContenants as $tc)
+                <option value="{{ $tc->id }}" data-poids="{{ $tc->poids_moyen_kg }}">{{ $tc->nom }} (~{{ $tc->poids_moyen_kg }} {{ __('declarations.form_kg_per_unit') }})</option>
+                @endforeach
+            </select>
+        </td>
+        <td>
+            <input type="number" name="lignes[__I__][nombre_contenants]" class="form-control form-control-sm text-center inp-nombre" value="1" min="1" max="999" required>
+        </td>
+        <td class="text-end"><span class="ligne-poids fw-semibold">0</span> kg</td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-line" title="{{ __('declarations.btn_remove_line') }}"><i class="bi bi-trash"></i></button>
+        </td>
+    </tr>
+</template>
 @endsection
 
 @push('scripts')
 <script>
-let selectedPoids = 0;
-let selectedService = '';
-const i18nEstimated = document.querySelector('form[data-i18n-estimated]')?.dataset.i18nEstimated || 'estimated';
+(function () {
+    const body     = document.getElementById('lignes-body');
+    const template = document.getElementById('ligne-template');
+    let index = 0;
 
-// Sélection service
-document.querySelectorAll('.service-radio').forEach(r => {
-    r.addEventListener('change', function() {
-        document.querySelectorAll('.service-btn').forEach(b => b.style.cssText = '');
-        this.nextElementSibling.style.cssText = 'background:#d1fae5;border-color:#1B6B3A!important;font-weight:600;';
-        selectedService = this.nextElementSibling.textContent.trim();
-        document.getElementById('sum-service').textContent = selectedService;
-        updateSummary();
+    function addLine() {
+        const html = template.innerHTML.replace(/__I__/g, index);
+        const tmp  = document.createElement('tbody');
+        tmp.innerHTML = html.trim();
+        const row = tmp.firstElementChild;
+        body.appendChild(row);
+        index++;
+        wireRow(row);
+        recalc();
+    }
+
+    function wireRow(row) {
+        row.querySelector('.sel-contenant').addEventListener('change', recalc);
+        row.querySelector('.inp-nombre').addEventListener('input', recalc);
+        row.querySelector('.btn-remove-line').addEventListener('click', function () {
+            // Toujours conserver au moins une ligne.
+            if (body.querySelectorAll('.ligne-row').length > 1) {
+                row.remove();
+            } else {
+                row.querySelector('.sel-service').value = '';
+                row.querySelector('.sel-contenant').value = '';
+                row.querySelector('.inp-nombre').value = 1;
+            }
+            recalc();
+        });
+    }
+
+    function recalc() {
+        let totalNb = 0, totalPoids = 0;
+        body.querySelectorAll('.ligne-row').forEach(function (row) {
+            const sel   = row.querySelector('.sel-contenant');
+            const opt   = sel.options[sel.selectedIndex];
+            const poids = opt ? parseFloat(opt.dataset.poids || 0) : 0;
+            const nb    = parseInt(row.querySelector('.inp-nombre').value) || 0;
+            const pl    = poids * nb;
+            row.querySelector('.ligne-poids').textContent = pl.toFixed(2);
+            totalNb    += nb;
+            totalPoids += pl;
+        });
+        document.getElementById('total-nb').textContent    = totalNb;
+        document.getElementById('total-poids').textContent = totalPoids.toFixed(2);
+    }
+
+    document.getElementById('btn-add-line').addEventListener('click', addLine);
+
+    // ── Validation métier côté client (avant POST) ──────────────
+    function showError(msg) {
+        let err = document.getElementById('lignes-error');
+        if (err) err.remove();
+        const form = document.getElementById('decl-form');
+        const div = document.createElement('div');
+        div.id = 'lignes-error';
+        div.className = 'alert alert-danger py-2';
+        div.textContent = msg;
+        form.prepend(div);
+        div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function validateLignes() {
+        const old = document.getElementById('lignes-error');
+        if (old) old.remove();
+        let complete = 0, incomplete = false;
+        body.querySelectorAll('.ligne-row').forEach(function (row) {
+            const svc = row.querySelector('.sel-service').value;
+            const tc  = row.querySelector('.sel-contenant').value;
+            const nb  = parseInt(row.querySelector('.inp-nombre').value) || 0;
+            const filled = (svc ? 1 : 0) + (tc ? 1 : 0) + (nb >= 1 ? 1 : 0);
+            if (filled === 3) complete++;
+            else if (filled > 0) incomplete = true;
+        });
+        if (incomplete) { showError(@json(__('declarations.error_incomplete_line'))); return false; }
+        if (complete === 0) { showError(@json(__('declarations.error_min_one_line'))); return false; }
+        return true;
+    }
+    document.getElementById('decl-form').addEventListener('submit', function (e) {
+        if (!validateLignes()) e.preventDefault();
     });
-});
 
-// Sélection contenant
-document.querySelectorAll('.contenant-radio').forEach(r => {
-    r.addEventListener('change', function() {
-        document.querySelectorAll('.contenant-btn').forEach(b => b.style.cssText = '');
-        this.nextElementSibling.style.cssText = 'background:#dbeafe;border-color:#2980B9!important;';
-        selectedPoids = parseFloat(this.dataset.poids);
-        updateSummary();
-    });
-});
-
-// Quantité
-document.getElementById('btn-moins').addEventListener('click', () => {
-    const inp = document.getElementById('nombre_contenants');
-    if (inp.value > 1) { inp.value--; updateSummary(); }
-});
-document.getElementById('btn-plus').addEventListener('click', () => {
-    const inp = document.getElementById('nombre_contenants');
-    inp.value++; updateSummary();
-});
-document.getElementById('nombre_contenants').addEventListener('input', updateSummary);
-
-function updateSummary() {
-    const nb = parseInt(document.getElementById('nombre_contenants').value) || 0;
-    const poids = (selectedPoids * nb).toFixed(2);
-    document.getElementById('sum-nb').textContent = nb;
-    document.getElementById('sum-poids').textContent = poids + ' kg';
-    document.getElementById('poids-preview').textContent = selectedPoids ? `≈ ${poids} kg ${i18nEstimated}` : '';
-    document.getElementById('summary').style.display = (nb > 0 && selectedPoids) ? 'block' : 'none';
-}
+    // Première ligne au chargement
+    addLine();
+})();
 </script>
 @endpush

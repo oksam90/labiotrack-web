@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Http\Requests\StoreDeclarationRequest;
+use App\Http\Requests\UpdateDeclarationRequest;
 use App\Models\Declaration;
 use App\Models\Service;
 use App\Models\TypeContenant;
+use App\Services\DeclarationService;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DeclarationController extends Controller
@@ -17,12 +20,17 @@ class DeclarationController extends Controller
     {
         $user  = Auth::user();
         // TenantScope appliqué automatiquement via le trait BelongsToTenant
-        $query = Declaration::with(['service','typeContenant','user','etablissement'])
+        $query = Declaration::with(['lignes.service','lignes.typeContenant','user','etablissement'])
             ->orderByDesc('date_declaration');
 
-        if ($request->service_id)        $query->where('service_id', $request->service_id);
+        // Filtres service / contenant : portent sur les lignes de détail
+        if ($request->service_id) {
+            $query->whereHas('lignes', fn ($q) => $q->where('service_id', $request->service_id));
+        }
+        if ($request->type_contenant_id) {
+            $query->whereHas('lignes', fn ($q) => $q->where('type_contenant_id', $request->type_contenant_id));
+        }
         if ($request->statut)            $query->where('statut', $request->statut);
-        if ($request->type_contenant_id) $query->where('type_contenant_id', $request->type_contenant_id);
         if ($request->date_debut)        $query->where('date_declaration', '>=', $request->date_debut);
         if ($request->date_fin)          $query->where('date_declaration', '<=', $request->date_fin);
         if ($user->isAgent())            $query->where('user_id', $user->id);
@@ -41,65 +49,32 @@ class DeclarationController extends Controller
         return view('declarations.create', compact('services','typeContenants'));
     }
 
-    public function store(Request $request)
+    public function store(StoreDeclarationRequest $request, DeclarationService $service)
     {
-        $request->validate([
-            'service_id'        => 'required|exists:services,id',
-            'type_contenant_id' => 'required|exists:type_contenants,id',
-            'nombre_contenants' => 'required|integer|min:1|max:999',
-            'notes'             => 'nullable|string|max:500',
-            'photo'             => 'nullable|image|max:5120',
-        ]);
-
-        $user      = Auth::user();
-        $contenant = TypeContenant::findOrFail($request->type_contenant_id);
-        $poids     = $contenant->poids_moyen_kg * $request->nombre_contenants;
-        $service   = Service::findOrFail($request->service_id);
-
-        // Pour admin global : utiliser l'établissement du service
-        $etabId = $user->isGlobal() ? $service->etablissement_id : $user->etablissement_id;
-
         $photoPath = null;
         if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('declarations/photos','public');
+            $photoPath = $request->file('photo')->store('declarations/photos', 'public');
         }
 
-        $decl = Declaration::withoutGlobalScope(\App\Scopes\TenantScope::class)->create([
-            'etablissement_id'  => $etabId,
-            'service_id'        => $request->service_id,
-            'user_id'           => $user->id,
-            'type_contenant_id' => $request->type_contenant_id,
-            'nombre_contenants' => $request->nombre_contenants,
-            'poids_estime_kg'   => $poids,
-            'statut'            => 'en_stock',
-            'notes'             => $request->notes,
-            'photo'             => $photoPath,
-            'date_declaration'  => now()->toDateString(),
-            'heure_declaration' => now()->toTimeString(),
-        ]);
+        $decl = $service->create(
+            Auth::user(),
+            $request->validated()['lignes'],
+            $request->input('notes'),
+            $photoPath
+        );
 
-        // QR code — créer le dossier si absent
-        $qrDir = storage_path('app/public/qrcodes');
-        if (! is_dir($qrDir)) {
-            mkdir($qrDir, 0755, true);
-        }
-        $qrPath = 'qrcodes/declaration_' . $decl->id . '.svg';
-        Storage::disk('public')->put($qrPath, QrCode::format('svg')->size(200)
-            ->generate(json_encode(['declaration_id'=>$decl->id,'etablissement_id'=>$etabId])));
-        $decl->update(['qr_code' => $qrPath]);
-
-        $this->detecterAnomalieVolume($etabId, $service->id, $poids);
+        $this->genererQrCode($decl);
 
         return redirect()->route('declarations.show', $decl->id)
             ->with('success', __('declarations.flash_created', [
-                'count'  => $request->nombre_contenants,
-                'weight' => $poids,
+                'count'  => $decl->nombre_contenants,
+                'weight' => $decl->poids_estime_kg,
             ]));
     }
 
     public function show($id)
     {
-        $declaration = Declaration::with(['service','typeContenant','user','etablissement'])
+        $declaration = Declaration::with(['lignes.service','lignes.typeContenant','user','etablissement'])
             ->findOrFail($id);
         $this->authorize('view', $declaration);
         return view('declarations.show', compact('declaration'));
@@ -107,37 +82,23 @@ class DeclarationController extends Controller
 
     public function edit($id)
     {
-        $declaration    = Declaration::findOrFail($id);
+        $declaration    = Declaration::with('lignes')->findOrFail($id);
         $this->authorize('update', $declaration);
         $services       = Service::actif()->orderBy('nom')->get();
         $typeContenants = TypeContenant::orderBy('nom')->get();
         return view('declarations.edit', compact('declaration','services','typeContenants'));
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateDeclarationRequest $request, DeclarationService $service, $id)
     {
         $declaration = Declaration::findOrFail($id);
         $this->authorize('update', $declaration);
-
-        $request->validate([
-            'service_id'        => 'required|exists:services,id',
-            'type_contenant_id' => 'required|exists:type_contenants,id',
-            'nombre_contenants' => 'required|integer|min:1',
-            'notes'             => 'nullable|string|max:500',
-        ]);
 
         if ($declaration->statut !== 'en_stock') {
             return back()->with('error', __('declarations.errors_edit_collected'));
         }
 
-        $contenant = TypeContenant::findOrFail($request->type_contenant_id);
-        $declaration->update([
-            'service_id'        => $request->service_id,
-            'type_contenant_id' => $request->type_contenant_id,
-            'nombre_contenants' => $request->nombre_contenants,
-            'poids_estime_kg'   => $contenant->poids_moyen_kg * $request->nombre_contenants,
-            'notes'             => $request->notes,
-        ]);
+        $service->update($declaration, $request->validated()['lignes'], $request->input('notes'));
 
         return redirect()->route('declarations.show', $id)->with('success', __('declarations.flash_updated'));
     }
@@ -160,33 +121,29 @@ class DeclarationController extends Controller
         $declaration = Declaration::findOrFail($id);
         $this->authorize('view', $declaration);
 
-        $qrPath = 'qrcodes/declaration_' . $id . '.svg';
-        Storage::disk('public')->put($qrPath, QrCode::format('svg')->size(300)
-            ->generate(json_encode(['declaration_id'=>$id,'etablissement_id'=>$declaration->etablissement_id])));
-        $declaration->update(['qr_code' => $qrPath]);
+        $this->genererQrCode($declaration, 300);
 
         return back()->with('success', __('declarations.flash_qr_generated'));
     }
 
-    private function detecterAnomalieVolume(int $etabId, int $serviceId, float $poids): void
+    /**
+     * Génère (ou régénère) le QR code SVG de traçabilité d'une déclaration
+     * et met à jour son champ qr_code. Factorisé entre store() et generateQr().
+     */
+    private function genererQrCode(Declaration $declaration, int $size = 200): void
     {
-        $moyenne = Declaration::withoutGlobalScope(\App\Scopes\TenantScope::class)
-            ->where('etablissement_id', $etabId)
-            ->where('service_id', $serviceId)
-            ->where('date_declaration', '>=', now()->subMonths(3))
-            ->avg('poids_estime_kg');
-
-        if ($moyenne && $poids > $moyenne * 1.5) {
-            $service = Service::find($serviceId);
-            if ($service) {
-                \App\Models\Alerte::withoutGlobalScope(\App\Scopes\TenantScope::class)->create([
-                    'etablissement_id' => $etabId,
-                    'service_id'       => $serviceId,
-                    'type'             => 'volume_anormal',
-                    'niveau'           => 'warning',
-                    'message'          => "Volume anormal au service «{$service->nom}» : {$poids} kg (moyenne: " . round($moyenne,1) . " kg).",
-                ]);
-            }
+        $qrDir = storage_path('app/public/qrcodes');
+        if (! is_dir($qrDir)) {
+            mkdir($qrDir, 0755, true);
         }
+
+        $qrPath = 'qrcodes/declaration_' . $declaration->id . '.svg';
+        Storage::disk('public')->put($qrPath, QrCode::format('svg')->size($size)
+            ->generate(json_encode([
+                'declaration_id'   => $declaration->id,
+                'etablissement_id' => $declaration->etablissement_id,
+            ])));
+
+        $declaration->update(['qr_code' => $qrPath]);
     }
 }

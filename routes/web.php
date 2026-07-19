@@ -20,8 +20,25 @@ use App\Http\Controllers\LocaleController;
 // ─── AUTH ──────────────────────────────────────────────────────────────────
 Route::get('/', fn() => redirect('/login'));
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+// SECURITY : rate-limiting anti-brute-force / credential-stuffing.
+// 5 tentatives / minute / (IP + email). Au-delà → 429 (redirigé vers /login
+// avec message, cf. handler dans bootstrap/app.php).
+Route::post('/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login')
+    ->name('login.post');
 Route::post('/logout',[AuthController::class, 'logout'])->name('logout');
+
+// ─── MOT DE PASSE OUBLIÉ ────────────────────────────────────────────────────
+Route::get('/forgot-password',  [AuthController::class, 'showForgotForm'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
+    ->middleware('throttle:6,1')->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password',  [AuthController::class, 'resetPassword'])->name('password.update');
+
+// ─── PAGES LÉGALES (publiques) ──────────────────────────────────────────────
+Route::view('/mentions-legales',       'legal.mentions')->name('legal.mentions');
+Route::view('/politique-confidentialite','legal.confidentialite')->name('legal.privacy');
+Route::view('/conditions-utilisation', 'legal.cgu')->name('legal.cgu');
 
 // ─── I18N — sélecteur de langue (accessible avant authentification) ────────
 Route::post('/locale/{lang}', [LocaleController::class, 'switch'])->name('locale.switch');
@@ -30,6 +47,10 @@ Route::post('/locale/{lang}', [LocaleController::class, 'switch'])->name('locale
 Route::middleware(['auth', 'tenant'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // ── MON COMPTE (droits RGPD : accès + portabilité) ──────────────────────
+    Route::get('/mon-compte/donnees',        [App\Http\Controllers\AccountController::class, 'donnees'])->name('account.data');
+    Route::get('/mon-compte/donnees/export', [App\Http\Controllers\AccountController::class, 'export'])->name('account.export');
 
     // ── DÉCLARATIONS ────────────────────────────────────────────────────────
     Route::prefix('declarations')->name('declarations.')->group(function () {
@@ -60,7 +81,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('/scan/{qr}',      [QrCodeController::class, 'scan'])->name('scan');
         Route::get('/{id}',           [CollecteController::class, 'show'])->name('show');
         // Route legacy /valider supprimée — validation par signature électronique
-        Route::post('/{id}/bordereau',[CollecteController::class, 'bordereau'])->name('bordereau');
+        Route::post('/{id}/bordereau',        [CollecteController::class, 'bordereau'])->name('bordereau');
+        Route::get('/{id}/bordereau/download', [CollecteController::class, 'downloadBordereau'])->name('bordereau.download');
 
     });
 

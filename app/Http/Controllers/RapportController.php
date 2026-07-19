@@ -112,31 +112,36 @@ class RapportController extends Controller
             CacheService::TTL_FINANCIER,
             function () use ($user, $mois) {
 
-                $etabFilter = function ($q, string $col = 'declarations.etablissement_id') use ($user) {
+                // Le détail (service × contenant × nombre) vit dans
+                // declaration_lignes. On joint l'en-tête `declarations` pour le
+                // filtre mois (date_declaration) + périmètre établissement.
+                $etabFilter = function ($q) use ($user) {
                     if ($user->isGlobal()) return $q;
-                    return $q->where($col, $user->etablissement_id);
+                    return $q->where('declarations.etablissement_id', $user->etablissement_id);
                 };
 
                 $coutParContenant = $etabFilter(
-                    DB::table('declarations')
-                        ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+                    DB::table('declaration_lignes')
+                        ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+                        ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
                         ->selectRaw('type_contenants.nom, type_contenants.cout_unitaire,
-                            SUM(declarations.nombre_contenants) as total_contenants,
-                            SUM(declarations.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
-                        ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
+                            SUM(declaration_lignes.nombre_contenants) as total_contenants,
+                            SUM(declaration_lignes.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
+                        ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('type_contenants.id', 'type_contenants.nom', 'type_contenants.cout_unitaire')
                 )->paginate(10, ['*'], 'contenants_page');
 
                 $coutSacs = $etabFilter(
-                    DB::table('declarations')
-                        ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+                    DB::table('declaration_lignes')
+                        ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+                        ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
                         ->selectRaw("
                             COALESCE(SUM(CASE WHEN type_contenants.code LIKE 'SJ%'
-                                THEN nombre_contenants * type_contenants.cout_unitaire END), 0) AS cout_jaune,
+                                THEN declaration_lignes.nombre_contenants * type_contenants.cout_unitaire END), 0) AS cout_jaune,
                             COALESCE(SUM(CASE WHEN type_contenants.code LIKE 'SN%'
-                                THEN nombre_contenants * type_contenants.cout_unitaire END), 0) AS cout_noir
+                                THEN declaration_lignes.nombre_contenants * type_contenants.cout_unitaire END), 0) AS cout_noir
                         ")
-                        ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
+                        ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->whereRaw("(type_contenants.code LIKE 'SJ%' OR type_contenants.code LIKE 'SN%')")
                 )->first();
 
@@ -148,11 +153,12 @@ class RapportController extends Controller
                 $economie      = $surcoutEstime;
 
                 $coutParService = $etabFilter(
-                    DB::table('declarations')
-                        ->join('services', 'declarations.service_id', '=', 'services.id')
-                        ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-                        ->selectRaw('services.nom, SUM(declarations.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
-                        ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
+                    DB::table('declaration_lignes')
+                        ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+                        ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
+                        ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
+                        ->selectRaw('services.nom, SUM(declaration_lignes.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
+                        ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('services.id', 'services.nom')
                         ->orderByDesc('cout_total')
                 )->paginate(10, ['*'], 'services_page');
@@ -232,9 +238,13 @@ class RapportController extends Controller
         ));
 
         // ── Requête D : par service (GROUP BY — ne peut pas être fusionnée) ─
-        $serviceQuery = DB::table('declarations')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->selectRaw('services.nom, SUM(poids_estime_kg) as poids, COUNT(*) as nb')
+        // Le service producteur vit désormais sur declaration_lignes ; on joint
+        // l'en-tête pour la date + le périmètre établissement. Le poids et le
+        // nombre de lignes sont agrégés au niveau ligne.
+        $serviceQuery = DB::table('declaration_lignes')
+            ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->selectRaw('services.nom, SUM(declaration_lignes.poids_estime_kg) as poids, COUNT(*) as nb')
             ->whereBetween('declarations.date_declaration', [$debut, $fin])
             ->groupBy('services.id', 'services.nom');
         if (! $isGlobal) $serviceQuery->where('declarations.etablissement_id', $etablissementId);

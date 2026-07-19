@@ -15,7 +15,11 @@ return [
     // ── Actions / buttons ───────────────────────────────────────
     'btn_new'             => 'New collection',
     'btn_create_and_pdf'  => 'Create collection & generate manifest',
-    'btn_bordereau_pdf'   => 'Manifest PDF',
+    'btn_bordereau_pdf'        => 'Generate manifest PDF',
+    'btn_bordereau_download'   => 'Download manifest',
+    'btn_bordereau_regenerate' => 'Regenerate',
+    'bordereau_preparing'      => 'The manifest is being prepared. It will be available for download shortly — please refresh the page.',
+    'bordereau_not_ready'      => 'The manifest is not ready yet. Please try again in a moment.',
     'btn_view'            => 'View details',
     'btn_sign'            => 'Electronic signature',
     'btn_signer_short'    => 'Sign manifest',

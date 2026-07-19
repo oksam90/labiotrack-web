@@ -132,6 +132,7 @@ return [
     'flash_user_created'        => 'Utilisateur créé.',
     'flash_user_updated'        => 'Utilisateur mis à jour.',
     'flash_user_deleted'        => 'Utilisateur supprimé.',
+    'flash_user_anonymized'     => 'Compte anonymisé (RGPD) — les données personnelles ont été effacées, la traçabilité des enregistrements est préservée.',
     'flash_user_status_changed' => 'Statut utilisateur modifié.',
     'flash_service_created'     => 'Service créé.',
     'flash_service_updated'     => 'Service mis à jour.',

@@ -132,6 +132,7 @@ return [
     'flash_user_created'        => 'User created.',
     'flash_user_updated'        => 'User updated.',
     'flash_user_deleted'        => 'User deleted.',
+    'flash_user_anonymized'     => 'Account anonymised (GDPR) — personal data erased, record traceability preserved.',
     'flash_user_status_changed' => 'User status changed.',
     'flash_service_created'     => 'Service created.',
     'flash_service_updated'     => 'Service updated.',

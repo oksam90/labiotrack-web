@@ -13,9 +13,12 @@
 /.zed
 /auth.json
 /node_modules
-/public/build
+# NB : /public/build EST versionné — le pipeline de déploiement ne compile pas
+# les assets (pas d'étape Node). Les fichiers Vite buildés doivent donc être
+# committés pour que @vite trouve son manifest en production.
 /public/hot
 /public/storage
+/.claude/worktrees
 /storage/*.key
 /storage/pail
 /vendor

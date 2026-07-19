@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '419')
+@section('icon', 'bi-clock-history')
+@section('title', __('errors.419_title'))
+@section('message', __('errors.419_message'))

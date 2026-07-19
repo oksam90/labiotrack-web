@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '403')
+@section('icon', 'bi-shield-lock')
+@section('title', __('errors.403_title'))
+@section('message', $exception?->getMessage() ?: __('errors.403_message'))

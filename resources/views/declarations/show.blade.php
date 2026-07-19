@@ -11,16 +11,46 @@
     </div>
 </div>
 <div class="row g-3 justify-content-center">
-<div class="col-md-7">
+<div class="col-md-8">
 <div class="card"><div class="card-body p-4">
+
+    {{-- Détail des lignes (service × contenant) --}}
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{{ __('declarations.show_service') }}</th>
+                    <th>{{ __('declarations.show_container') }}</th>
+                    <th class="text-end">{{ __('declarations.show_qty') }}</th>
+                    <th class="text-end">{{ __('declarations.show_weight_per_unit') }}</th>
+                    <th class="text-end">{{ __('declarations.show_weight_estimated') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($declaration->lignes as $ligne)
+                <tr>
+                    <td><span class="badge bg-light text-dark border">{{ $ligne->service->nom ?? '—' }}</span></td>
+                    <td><small>{{ $ligne->typeContenant->nom ?? '—' }}</small></td>
+                    <td class="text-end fw-semibold text-success">{{ $ligne->nombre_contenants }}</td>
+                    <td class="text-end"><small>{{ $ligne->typeContenant->poids_moyen_kg ?? 0 }} kg</small></td>
+                    <td class="text-end fw-bold">{{ number_format($ligne->poids_estime_kg, 2) }} kg</td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="2" class="text-end">{{ __('declarations.total_containers') }}</th>
+                    <th class="text-end text-success">{{ $declaration->nombre_contenants }}</th>
+                    <th></th>
+                    <th class="text-end text-primary">{{ number_format($declaration->poids_estime_kg, 2) }} kg</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
     <div class="row g-3">
-        <div class="col-md-6"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_service') }}</small><strong>{{ $declaration->service_nom }}</strong></div></div>
-        <div class="col-md-6"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_container') }}</small><strong>{{ $declaration->contenant_nom }}</strong></div></div>
-        <div class="col-md-4"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_qty') }}</small><strong class="fs-4 text-success">{{ $declaration->nombre_contenants }}</strong></div></div>
-        <div class="col-md-4"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_weight_estimated') }}</small><strong class="fs-5">{{ number_format($declaration->poids_estime_kg,2) }} kg</strong></div></div>
-        <div class="col-md-4"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_weight_per_unit') }}</small><strong>{{ $declaration->poids_moyen_kg }} kg</strong></div></div>
         <div class="col-md-6"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_datetime') }}</small><strong>{{ \Carbon\Carbon::parse($declaration->date_declaration)->format('d/m/Y') }}</strong> {{ substr($declaration->heure_declaration,0,5) }}</div></div>
-        <div class="col-md-6"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_agent') }}</small><strong>{{ $declaration->agent_nom }}</strong></div></div>
+        <div class="col-md-6"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_agent') }}</small><strong>{{ $declaration->user->nom_complet ?? '—' }}</strong></div></div>
         @if($declaration->notes)
         <div class="col-12"><div class="p-3 bg-light rounded"><small class="text-muted d-block">{{ __('declarations.show_notes') }}</small>{{ $declaration->notes }}</div></div>
         @endif
@@ -28,13 +58,13 @@
         <div class="col-12 text-center">
             <div class="p-3 bg-light rounded">
                 <small class="text-muted d-block mb-2">{{ __('declarations.show_qr_traceability') }}</small>
-                <img src="{{ Storage::url($declaration->qr_code) }}" alt="QR Code" style="max-width:150px;">
+                <img src="{{ Storage::url($declaration->qr_code) }}" alt="QR Code" loading="lazy" style="max-width:150px;">
             </div>
         </div>
         @endif
     </div>
     <div class="mt-3 p-3 rounded" style="background:#eff6ff;border:1px solid #bfdbfe;">
-        <small><i class="bi bi-info-circle me-1 text-primary"></i><strong>{{ __('declarations.show_automated') }}</strong> {{ __('declarations.show_automated_detail', ['rate' => $declaration->poids_moyen_kg, 'count' => $declaration->nombre_contenants]) }}</small>
+        <small><i class="bi bi-info-circle me-1 text-primary"></i><strong>{{ __('declarations.show_automated') }}</strong> {{ __('declarations.show_automated_multi') }}</small>
     </div>
 </div></div>
 <div class="mt-3"><a href="{{ route('declarations.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>{{ __('declarations.btn_back') }}</a></div>

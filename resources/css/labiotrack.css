@@ -1,0 +1,151 @@
+/*
+ * Design system LaBioTrack — extrait du <style> inline de layouts/app.blade.php
+ * (externalisé pour maintenance + minification via Vite). Chargé après Bootstrap
+ * dans resources/css/app.css afin de surcharger ses valeurs par défaut.
+ */
+:root {
+    --primary:    #1B6B3A;
+    --primary-lt: #2E8B57;
+    --secondary:  #D4A017;
+    --danger:     #C0392B;
+    --warning:    #E67E22;
+    --info:       #2980B9;
+    --dark:       #1A2332;
+    --sidebar-w:  260px;
+}
+body { background:#F4F7F6; font-family:'Segoe UI',system-ui,sans-serif; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+    position: fixed; top:0; left:0; height:100vh; width:var(--sidebar-w);
+    background: var(--dark);
+    overflow-y:auto; z-index:1000; transition:.3s;
+}
+.sidebar-brand {
+    padding:1.2rem 1.5rem;
+    background: linear-gradient(135deg,var(--primary),#0d4024);
+    color:#fff;
+}
+.sidebar-brand h6 { font-size:.65rem; opacity:.7; letter-spacing:.1em; text-transform:uppercase; }
+.sidebar-brand h4 { font-size:1.1rem; font-weight:700; margin:0; }
+.sidebar-brand .bi { font-size:1.6rem; }
+
+.sidebar-section {
+    padding:.5rem 1rem .2rem;
+    font-size:.65rem; letter-spacing:.12em; text-transform:uppercase;
+    color:rgba(255,255,255,.35); font-weight:600;
+}
+.sidebar-link {
+    display:flex; align-items:center; gap:.7rem;
+    padding:.6rem 1.4rem; color:rgba(255,255,255,.75);
+    text-decoration:none; font-size:.88rem; transition:.15s;
+    border-left:3px solid transparent;
+}
+.sidebar-link:hover, .sidebar-link.active {
+    color:#fff; background:rgba(255,255,255,.07);
+    border-left-color: var(--secondary);
+}
+.sidebar-link .bi { font-size:1rem; width:20px; }
+.badge-sidebar {
+    margin-left:auto; font-size:.65rem;
+    background:var(--danger); color:#fff; border-radius:10px; padding:.15rem .5rem;
+}
+
+/* ── MAIN CONTENT ── */
+#main { margin-left:var(--sidebar-w); padding:1.5rem; }
+
+/* ── TOP NAV ── */
+.topbar {
+    background:#fff; border-bottom:1px solid #e5e9ef;
+    padding:.75rem 1.5rem; display:flex; align-items:center; gap:1rem;
+    margin:-1.5rem -1.5rem 1.5rem; position:sticky; top:0; z-index:100;
+}
+.topbar-title { font-weight:600; font-size:1.1rem; color:var(--dark); flex:1; }
+.topbar .avatar {
+    width:36px; height:36px; border-radius:50%;
+    background: linear-gradient(135deg,var(--primary-lt),var(--secondary));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; font-size:.85rem;
+}
+.role-badge {
+    font-size:.68rem; padding:.2rem .6rem; border-radius:20px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.05em;
+}
+.role-superadmin { background:#2c3e50; color:#fff; }
+.role-admin      { background:#8e44ad; color:#fff; }
+.role-qhse       { background:var(--primary); color:#fff; }
+.role-agent      { background:var(--info); color:#fff; }
+.role-collecteur { background:var(--warning); color:#fff; }
+.role-prestataire{ background:#7f8c8d; color:#fff; }
+
+/* ── CARDS ── */
+.stat-card {
+    background:#fff; border-radius:12px; padding:1.3rem 1.5rem;
+    border:1px solid #e5e9ef; position:relative; overflow:hidden;
+}
+.stat-card .icon {
+    width:52px; height:52px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.4rem;
+}
+.stat-card .value { font-size:1.8rem; font-weight:700; color:var(--dark); }
+.stat-card .label { font-size:.82rem; color:#6b7280; margin-top:.1rem; }
+.stat-card .trend { font-size:.78rem; font-weight:600; }
+.trend-up   { color:#16a34a; }
+.trend-down { color:#dc2626; }
+
+/* ── TABLE ── */
+.table { font-size:.88rem; }
+.table thead th { background:#F4F7F6; font-weight:600; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; border-bottom:2px solid #e5e9ef; }
+
+/* ── STATUT BADGES ── */
+.statut-en_stock     { background:#d1fae5; color:#065f46; }
+.statut-en_transport { background:#dbeafe; color:#1e40af; }
+.statut-detruit      { background:#f3f4f6; color:#374151; }
+.statut-annule       { background:#fee2e2; color:#991b1b; }
+.statut-badge { font-size:.72rem; padding:.25rem .6rem; border-radius:20px; font-weight:600; }
+
+/* ── FORMS ── */
+.form-label { font-weight:600; font-size:.85rem; color:#374151; }
+.form-control, .form-select { border:1.5px solid #e5e9ef; border-radius:8px; font-size:.9rem; }
+.form-control:focus, .form-select:focus { border-color:var(--primary-lt); box-shadow:0 0 0 3px rgba(46,139,87,.12); }
+
+/* ── ALERTS ── */
+.alert-info    { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+.alert-success { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+.alert-warning { background:#fffbeb; border-color:#fde68a; color:#92400e; }
+.alert-danger  { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+    #sidebar { transform:translateX(-100%); }
+    #sidebar.show { transform:translateX(0); }
+    #main { margin-left:0; padding:1rem; }
+}
+
+.page-header { border-bottom:2px solid #e5e9ef; padding-bottom:1rem; margin-bottom:1.5rem; }
+@keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.5; transform:scale(1.3); }
+}
+.btn-primary { background:var(--primary); border-color:var(--primary); }
+.btn-primary:hover { background:var(--primary-lt); border-color:var(--primary-lt); }
+.card { border:1px solid #e5e9ef; border-radius:12px; }
+.card-header { background:#F4F7F6; border-bottom:1px solid #e5e9ef; font-weight:600; }
+
+/* ── PROGRESS CONFORMITÉ ── */
+.score-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+.score-ring svg { transform:rotate(-90deg); }
+.score-ring .score-text { position:absolute; font-weight:700; font-size:1.1rem; color:var(--dark); }
+
+/* ── LOADING (état de chargement standardisé) ── */
+.lbt-spinner {
+    display:inline-block; width:1.1rem; height:1.1rem; vertical-align:-.15rem;
+    border:2px solid rgba(27,107,58,.25); border-top-color:var(--primary);
+    border-radius:50%; animation:lbt-spin .7s linear infinite;
+}
+.lbt-loading-overlay {
+    position:absolute; inset:0; background:rgba(255,255,255,.6);
+    display:flex; align-items:center; justify-content:center; z-index:5;
+}
+@keyframes lbt-spin { to { transform:rotate(360deg); } }

@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // place donc dans le group 'web' (ajouté après StartSession).
         $middleware->web(append: [
             \App\Http\Middleware\SetLocaleMiddleware::class,
+            \App\Http\Middleware\SecurityHeadersMiddleware::class,
         ]);
 
         $middleware->alias([
@@ -35,6 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // ── Error tracking (Sentry) ───────────────────────────────
+        // Inerte tant que SENTRY_LARAVEL_DSN n'est pas défini (aucune donnée
+        // envoyée). Renseigner le DSN en prod pour activer la télémétrie.
+        \Sentry\Laravel\Integration::handles($exceptions);
+
         // ── 419 Page Expired ──────────────────────────────────────
         // Laravel jette TokenMismatchException quand le CSRF expire :
         //  - onglet de login resté ouvert > SESSION_LIFETIME
@@ -48,12 +54,27 @@ return Application::configure(basePath: dirname(__DIR__))
         // Au lieu d'afficher la page brute « 419 PAGE EXPIRED », on
         // redirige vers /login avec un message explicite.
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
-            if ($e->getStatusCode() !== 419) {
-                return null; // laisse Laravel gérer les autres HttpException
+            $status = $e->getStatusCode();
+
+            // ── 419 Page Expired → retour login avec message ─────────
+            if ($status === 419) {
+                return redirect()
+                    ->route('login')
+                    ->withInput($request->except(['password', '_token']))
+                    ->with('warning', __('auth_ui.session_expired'));
             }
-            return redirect()
-                ->route('login')
-                ->withInput($request->except(['password', '_token']))
-                ->with('warning', __('auth_ui.session_expired'));
+
+            // ── 429 Too Many Requests (rate-limiter login) ───────────
+            // Sur la route de login, on renvoie un message actionnable
+            // plutôt qu'une page brute « 429 ».
+            if ($status === 429 && $request->routeIs('login.post', 'password.email')) {
+                $retry = $e->getHeaders()['Retry-After'] ?? 60;
+                return redirect()
+                    ->route('login')
+                    ->withInput($request->except(['password', '_token']))
+                    ->withErrors(['email' => __('auth_ui.too_many_attempts', ['seconds' => $retry])]);
+            }
+
+            return null; // laisse Laravel gérer les autres HttpException
         });
     })->create();

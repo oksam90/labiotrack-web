@@ -117,6 +117,7 @@ return [
     'created_success'       => 'Signature enregistrée. Le PDF est en cours de génération.',
     'created_async_pending' => 'Signature enregistrée avec succès.',
     'invalid_image'         => 'Image de signature invalide.',
+    'already_signed'        => 'Ce bordereau vient d’être signé ou n’est plus signable. Actualisez la page.',
     'pdf_not_ready'         => "Le PDF n'est pas encore disponible. Réessayez dans quelques secondes.",
     'revoked_success'       => 'Signature révoquée. La collecte peut être signée à nouveau.',
 ];

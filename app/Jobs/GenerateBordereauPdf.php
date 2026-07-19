@@ -62,13 +62,16 @@ class GenerateBordereauPdf implements ShouldQueue
 
         $collecte = $signature->collecte()->withoutGlobalScopes()->firstOrFail();
 
-        // Données dénormalisées (pattern existant des bordereaux)
+        // Données dénormalisées (pattern existant des bordereaux) : une ligne
+        // par ligne de déclaration (service × contenant).
         $declarations = DB::table('collecte_declarations')
             ->join('declarations', 'collecte_declarations.declaration_id', '=', 'declarations.id')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+            ->join('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
             ->select(
-                'declarations.*',
+                'declaration_lignes.nombre_contenants',
+                'declaration_lignes.poids_estime_kg',
                 'services.nom as service_nom',
                 'type_contenants.nom as contenant_nom'
             )

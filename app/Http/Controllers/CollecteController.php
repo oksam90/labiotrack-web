@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Jobs\GenerateCollecteBordereauPdf;
 
 class CollecteController extends Controller
 {
@@ -37,11 +37,25 @@ class CollecteController extends Controller
         $this->authorize('create', \App\Models\Collecte::class);
 
         $user  = Auth::user();
+        // Une déclaration peut porter plusieurs services / contenants (lignes) :
+        // on agrège les libellés distincts par déclaration pour l'affichage.
         $decQuery = DB::table('declarations')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-            ->select('declarations.*', 'services.nom as service_nom', 'type_contenants.nom as contenant_nom')
+            ->leftJoin('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->leftJoin('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->leftJoin('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
+            ->select(
+                'declarations.id',
+                'declarations.nombre_contenants',
+                'declarations.poids_estime_kg',
+                'declarations.date_declaration',
+                'declarations.etablissement_id',
+                DB::raw("GROUP_CONCAT(DISTINCT services.nom ORDER BY services.nom SEPARATOR ', ') as service_nom"),
+                DB::raw("GROUP_CONCAT(DISTINCT type_contenants.nom ORDER BY type_contenants.nom SEPARATOR ', ') as contenant_nom")
+            )
             ->where('declarations.statut', 'en_stock')
+            ->groupBy('declarations.id', 'declarations.nombre_contenants',
+                'declarations.poids_estime_kg', 'declarations.date_declaration',
+                'declarations.etablissement_id')
             ->orderByDesc('declarations.date_declaration');
 
         $user->filtreEtab($decQuery, 'declarations.etablissement_id');
@@ -154,11 +168,19 @@ class CollecteController extends Controller
         $user->filtreEtab($query, 'collectes.etablissement_id');
         $collecte = $query->firstOrFail();
 
+        // Une ligne par ligne de déclaration (service × contenant).
         $declarations = DB::table('collecte_declarations')
             ->join('declarations', 'collecte_declarations.declaration_id', '=', 'declarations.id')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-            ->select('declarations.*', 'services.nom as service_nom', 'type_contenants.nom as contenant_nom')
+            ->join('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
+            ->select(
+                'declarations.id',
+                'declaration_lignes.nombre_contenants',
+                'declaration_lignes.poids_estime_kg',
+                'services.nom as service_nom',
+                'type_contenants.nom as contenant_nom'
+            )
             ->where('collecte_declarations.collecte_id', $id)
             ->get();
 
@@ -171,6 +193,11 @@ class CollecteController extends Controller
     // sur tablette — voir SignatureController + Job GenerateBordereauPdf
     // (le statut passe alors de 'en_cours' à 'signee').
 
+    /**
+     * Déclenche la génération ASYNCHRONE du bordereau PDF (non signé).
+     * Si le PDF est déjà prêt, redirige directement vers le téléchargement.
+     * Sinon dispatch le job et revient avec un message « en préparation ».
+     */
     public function bordereau($id)
     {
         $user  = Auth::user();
@@ -178,16 +205,34 @@ class CollecteController extends Controller
         $user->filtreEtab($query, 'etablissement_id');
         $collecte = $query->firstOrFail();
 
-        $declarations = DB::table('collecte_declarations')
-            ->join('declarations', 'collecte_declarations.declaration_id', '=', 'declarations.id')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
-            ->select('declarations.*', 'services.nom as service_nom', 'type_contenants.nom as contenant_nom')
-            ->where('collecte_declarations.collecte_id', $id)
-            ->get();
+        if ($collecte->bordereau_pdf_path
+            && Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            return redirect()->route('collectes.bordereau.download', $collecte->id);
+        }
 
-        $etablissement = DB::table('etablissements')->find($collecte->etablissement_id);
-        $pdf = Pdf::loadView('collectes.bordereau_pdf', compact('collecte', 'declarations', 'etablissement'));
-        return $pdf->download("bordereau_{$collecte->numero_bordereau}.pdf");
+        GenerateCollecteBordereauPdf::dispatch((int) $collecte->id, app()->getLocale());
+
+        return back()->with('success', __('collectes.bordereau_preparing'));
+    }
+
+    /**
+     * Télécharge le bordereau PDF déjà généré (dans le périmètre de l'user).
+     */
+    public function downloadBordereau($id)
+    {
+        $user  = Auth::user();
+        $query = DB::table('collectes')->where('id', $id);
+        $user->filtreEtab($query, 'etablissement_id');
+        $collecte = $query->firstOrFail();
+
+        if (! $collecte->bordereau_pdf_path
+            || ! Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            return back()->with('error', __('collectes.bordereau_not_ready'));
+        }
+
+        return Storage::disk('public')->download(
+            $collecte->bordereau_pdf_path,
+            "bordereau_{$collecte->numero_bordereau}.pdf"
+        );
     }
 }

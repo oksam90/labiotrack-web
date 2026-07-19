@@ -1,0 +1,5 @@
+@extends('errors.layout')
+@section('code', '404')
+@section('icon', 'bi-compass')
+@section('title', __('errors.404_title'))
+@section('message', __('errors.404_message'))

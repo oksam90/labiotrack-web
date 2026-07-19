@@ -94,15 +94,16 @@ class DashboardController extends Controller
                 WHERE collectes.etablissement_id = ?
                   AND DATE_FORMAT(destructions.date_destruction,'%Y-%m') = ?
             ),
-            -- CTE coûts sacs : jaune + noir via SUM(CASE WHEN)
+            -- CTE coûts sacs : jaune + noir via SUM(CASE WHEN) sur les lignes
             cout_stats AS (
                 SELECT
                     COALESCE(SUM(CASE WHEN tc.code LIKE 'SJ%'
-                        THEN d.nombre_contenants * tc.cout_unitaire END), 0) AS cout_jaune,
+                        THEN dl.nombre_contenants * tc.cout_unitaire END), 0) AS cout_jaune,
                     COALESCE(SUM(CASE WHEN tc.code LIKE 'SN%'
-                        THEN d.nombre_contenants * tc.cout_unitaire END), 0) AS cout_noir
-                FROM declarations d
-                JOIN type_contenants tc ON tc.id = d.type_contenant_id
+                        THEN dl.nombre_contenants * tc.cout_unitaire END), 0) AS cout_noir
+                FROM declaration_lignes dl
+                JOIN declarations d ON d.id = dl.declaration_id
+                JOIN type_contenants tc ON tc.id = dl.type_contenant_id
                 WHERE d.etablissement_id = ?
                   AND DATE_FORMAT(d.date_declaration,'%Y-%m') = ?
                   AND (tc.code LIKE 'SJ%' OR tc.code LIKE 'SN%')
@@ -149,37 +150,50 @@ class DashboardController extends Controller
             ];
         }
 
-        // Production par service
-        $productionParService = DB::table('declarations')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
+        // Production par service (agrégée sur les lignes de déclaration)
+        $productionParService = DB::table('declaration_lignes')
+            ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('services', 'declaration_lignes.service_id', '=', 'services.id')
             ->select('services.nom',
-                DB::raw('SUM(poids_estime_kg) as poids_total'),
+                DB::raw('SUM(declaration_lignes.poids_estime_kg) as poids_total'),
                 DB::raw('COUNT(*) as nb_declarations'))
             ->where('declarations.etablissement_id', $etabId)
-            ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
+            ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
             ->groupBy('services.id', 'services.nom')
             ->orderByDesc('poids_total')->get();
 
         // Répartition contenants (avec couleur du type de déchet)
-        $repartitionContenants = DB::table('declarations')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+        $repartitionContenants = DB::table('declaration_lignes')
+            ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
             ->join('type_dechets', 'type_contenants.type_dechet_id', '=', 'type_dechets.id')
-            ->select('type_contenants.nom', 'type_dechets.couleur_sac', DB::raw('SUM(nombre_contenants) as total'))
+            ->select('type_contenants.nom', 'type_dechets.couleur_sac',
+                DB::raw('SUM(declaration_lignes.nombre_contenants) as total'))
             ->where('declarations.etablissement_id', $etabId)
-            ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois])
+            ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
             ->groupBy('type_contenants.id', 'type_contenants.nom', 'type_dechets.couleur_sac')->get();
 
-        // Dernières activités
+        // Dernières activités : services/contenants concaténés par déclaration
         $derniereActivites = DB::table('declarations')
-            ->join('services', 'declarations.service_id', '=', 'services.id')
-            ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+            ->leftJoin('declaration_lignes', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+            ->leftJoin('services', 'declaration_lignes.service_id', '=', 'services.id')
+            ->leftJoin('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
             ->join('users', 'declarations.user_id', '=', 'users.id')
             ->select(
-                'declarations.*',
-                'services.nom as service_nom',
-                'type_contenants.nom as contenant_nom',
+                'declarations.id',
+                'declarations.nombre_contenants',
+                'declarations.poids_estime_kg',
+                'declarations.statut',
+                'declarations.date_declaration',
+                'declarations.created_at',
+                DB::raw("GROUP_CONCAT(DISTINCT services.nom ORDER BY services.nom SEPARATOR ', ') as service_nom"),
+                DB::raw("GROUP_CONCAT(DISTINCT type_contenants.nom ORDER BY type_contenants.nom SEPARATOR ', ') as contenant_nom"),
                 DB::raw("CONCAT(users.prenom,' ',users.nom) as agent_nom"))
             ->where('declarations.etablissement_id', $etabId)
+            ->groupBy('declarations.id', 'declarations.nombre_contenants',
+                'declarations.poids_estime_kg', 'declarations.statut',
+                'declarations.date_declaration', 'declarations.created_at',
+                'users.prenom', 'users.nom')
             ->orderByDesc('declarations.created_at')->limit(8)->get();
 
         // Alertes récentes

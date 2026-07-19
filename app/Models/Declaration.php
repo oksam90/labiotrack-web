@@ -11,7 +11,7 @@ class Declaration extends Model
     use HasFactory, BelongsToTenant;
 
     protected $fillable = [
-        'etablissement_id','service_id','user_id','type_contenant_id',
+        'etablissement_id','user_id',
         'nombre_contenants','poids_estime_kg','poids_reel_kg','statut',
         'notes','photo','qr_code','date_declaration','heure_declaration',
     ];
@@ -19,9 +19,9 @@ class Declaration extends Model
     protected $casts = ['date_declaration' => 'date'];
 
     // ── Relations ──────────────────────────────────────────
-    public function service()       { return $this->belongsTo(Service::class); }
-    public function user()          { return $this->belongsTo(User::class); }
-    public function typeContenant() { return $this->belongsTo(TypeContenant::class); }
+    // Le détail (service × contenant) vit désormais dans declaration_lignes.
+    public function lignes() { return $this->hasMany(DeclarationLigne::class); }
+    public function user()   { return $this->belongsTo(User::class); }
 
     // ── Scopes ─────────────────────────────────────────────
     public function scopeEnStock($query)     { return $query->where('statut', 'en_stock'); }

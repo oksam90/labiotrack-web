@@ -307,11 +307,12 @@ class SuperAdminController extends Controller
                     ->selectRaw('COALESCE(AVG(score_conformite), 0)')
                     ->whereColumn('checklists.etablissement_id', 'etablissements.id')
                     ->whereRaw("DATE_FORMAT(date_checklist,'%Y-%m') = ?", [$mois]),
-                'cout' => DB::table('declarations')
-                    ->selectRaw('COALESCE(SUM(declarations.nombre_contenants * type_contenants.cout_unitaire), 0)')
-                    ->join('type_contenants', 'declarations.type_contenant_id', '=', 'type_contenants.id')
+                'cout' => DB::table('declaration_lignes')
+                    ->selectRaw('COALESCE(SUM(declaration_lignes.nombre_contenants * type_contenants.cout_unitaire), 0)')
+                    ->join('declarations', 'declaration_lignes.declaration_id', '=', 'declarations.id')
+                    ->join('type_contenants', 'declaration_lignes.type_contenant_id', '=', 'type_contenants.id')
                     ->whereColumn('declarations.etablissement_id', 'etablissements.id')
-                    ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$mois]),
+                    ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois]),
             ])
             ->paginate(10);
 

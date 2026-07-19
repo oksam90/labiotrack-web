@@ -77,12 +77,20 @@
                         <div>{{ \Carbon\Carbon::parse($d->date_declaration)->format('d/m/Y') }}</div>
                         <small class="text-muted">{{ substr($d->heure_declaration,0,5) }}</small>
                     </td>
-                    <td><span class="badge bg-light text-dark border">{{ $d->service_nom }}</span></td>
-                    <td><small>{{ $d->contenant_nom }}</small></td>
+                    <td>
+                        @foreach($d->lignes->pluck('service.nom')->filter()->unique() as $svc)
+                        <span class="badge bg-light text-dark border mb-1">{{ $svc }}</span>
+                        @endforeach
+                    </td>
+                    <td>
+                        @foreach($d->lignes->pluck('typeContenant.nom')->filter()->unique() as $tc)
+                        <small class="d-block">{{ $tc }}</small>
+                        @endforeach
+                    </td>
                     <td><strong>{{ $d->nombre_contenants }}</strong></td>
                     <td>{{ number_format($d->poids_estime_kg,1) }} kg</td>
                     <td><span class="statut-badge statut-{{ $d->statut }}">{{ __('declarations.status_' . $d->statut) }}</span></td>
-                    <td><small class="text-muted">{{ $d->agent_nom }}</small></td>
+                    <td><small class="text-muted">{{ $d->user->nom_complet ?? '—' }}</small></td>
                     <td>
                         <a href="{{ route('declarations.show', $d->id) }}" class="btn btn-xs btn-outline-primary btn-sm py-0 px-2"><i class="bi bi-eye"></i></a>
                         @if($d->statut === 'en_stock')

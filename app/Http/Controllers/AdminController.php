@@ -199,6 +199,7 @@ class AdminController extends Controller
             // l'établissement de rattachement (qhse, agent, admin local).
             ->leftJoin('reseaux', 'reseaux.id', '=', DB::raw('COALESCE(users.reseau_id, etablissements.reseau_id)'))
             ->select('users.*', 'etablissements.nom as etablissement_nom', 'reseaux.nom as reseau_nom')
+            ->whereNull('users.anonymized_at') // masque les comptes anonymisés (RGPD)
             ->orderByDesc('users.created_at');
 
         // SUPERADMIN → tous les utilisateurs
@@ -379,8 +380,30 @@ class AdminController extends Controller
     {
         // Ne pas supprimer son propre compte
         abort_if($id == Auth::id(), 403, __('admin.errors_cant_delete_self'));
-        DB::table('users')->where('id', $id)->delete();
-        return redirect()->route('admin.utilisateurs.index')->with('success', __('admin.flash_user_deleted'));
+
+        // RGPD / traçabilité : on ANONYMISE plutôt que de supprimer. Une
+        // suppression physique cascaderait sur declarations/signatures (FK
+        // cascadeOnDelete) et détruirait la preuve légale. On efface donc les
+        // données personnelles et on désactive le compte, en conservant les
+        // enregistrements métier dé-identifiés.
+        $user = DB::table('users')->where('id', $id)->whereNull('anonymized_at')->first();
+        abort_if(! $user, 404);
+
+        DB::table('users')->where('id', $id)->update([
+            'nom'           => 'Utilisateur',
+            'prenom'        => 'Anonymisé',
+            'email'         => 'anonymise+' . $id . '@labiotrack.invalid',
+            'telephone'     => null,
+            'password'      => bcrypt(\Illuminate\Support\Str::random(40)),
+            'remember_token'=> null,
+            'last_login_ip' => null,
+            'actif'         => 0,
+            'anonymized_at' => now(),
+            'updated_at'    => now(),
+        ]);
+
+        return redirect()->route('admin.utilisateurs.index')
+            ->with('success', __('admin.flash_user_anonymized'));
     }
 
     public function toggleUser($id)
@@ -464,7 +487,7 @@ class AdminController extends Controller
 
     public function destroyService($id)
     {
-        $count = DB::table('declarations')->where('service_id', $id)->count();
+        $count = DB::table('declaration_lignes')->where('service_id', $id)->count();
         if ($count > 0) {
             return back()->with('error', __('admin.flash_service_delete_blocked', ['count' => $count]));
         }
@@ -544,7 +567,7 @@ class AdminController extends Controller
     {
         abort_unless(Auth::user()->isSuperAdmin(), 403, __('admin.errors_containers_readonly'));
 
-        $count = DB::table('declarations')->where('type_contenant_id', $id)->count();
+        $count = DB::table('declaration_lignes')->where('type_contenant_id', $id)->count();
         if ($count > 0) {
             return back()->with('error', __('admin.flash_container_delete_blocked', ['count' => $count]));
         }

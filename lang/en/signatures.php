@@ -117,6 +117,7 @@ return [
     'created_success'       => 'Signature saved. The PDF is being generated.',
     'created_async_pending' => 'Signature saved successfully.',
     'invalid_image'         => 'Invalid signature image.',
+    'already_signed'        => 'This slip has just been signed or is no longer signable. Please refresh the page.',
     'pdf_not_ready'         => 'The PDF is not yet available. Try again in a few seconds.',
     'revoked_success'       => 'Signature revoked. The collection can be signed again.',
 ];

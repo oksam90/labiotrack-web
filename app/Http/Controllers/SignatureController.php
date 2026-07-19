@@ -71,23 +71,40 @@ class SignatureController extends Controller
         );
         Storage::disk('local')->put($path, $imageData);
 
-        $signature = Signature::create([
-            'collecte_id'         => $collecte->id,
-            'etablissement_id'    => $collecte->etablissement_id,
-            'signataire_user_id'  => Auth::id(),
-            'agent_user_id'       => $collecte->collecteur_id,
-            'signataire_nom'      => $validated['signataire_nom'],
-            'signataire_fonction' => $validated['signataire_fonction'] ?? null,
-            'signature_image_path'=> $path,
-            'signature_hash'      => $hash,
-            'commentaire'         => $validated['commentaire'],
-            'ip_address'          => $request->ip(),
-            'user_agent'          => substr((string) $request->userAgent(), 0, 1000),
-            'device_info'         => $this->extractDeviceInfo($request),
-            'signed_at'           => now(),
-        ]);
+        // SECURITY / intégrité : la création de la signature + le passage de la
+        // collecte à « signee » sont sérialisés par un verrou pessimiste sur la
+        // ligne collecte. Sans cela, deux requêtes de signature quasi-simultanées
+        // pourraient toutes deux passer le contrôle policy (TOCTOU) et créer une
+        // double signature. Le verrou garantit qu'une seule gagne.
+        $signature = DB::transaction(function () use ($collecte, $validated, $request, $path, $hash) {
+            $locked = Collecte::whereKey($collecte->id)->lockForUpdate()->firstOrFail();
 
-        $collecte->update(['statut' => 'signee']);
+            if ($locked->statut !== 'en_cours' || $locked->signature()->exists()) {
+                throw ValidationException::withMessages([
+                    'signature_image' => __('signatures.already_signed'),
+                ]);
+            }
+
+            $signature = Signature::create([
+                'collecte_id'         => $locked->id,
+                'etablissement_id'    => $locked->etablissement_id,
+                'signataire_user_id'  => Auth::id(),
+                'agent_user_id'       => $locked->collecteur_id,
+                'signataire_nom'      => $validated['signataire_nom'],
+                'signataire_fonction' => $validated['signataire_fonction'] ?? null,
+                'signature_image_path'=> $path,
+                'signature_hash'      => $hash,
+                'commentaire'         => $validated['commentaire'],
+                'ip_address'          => $request->ip(),
+                'user_agent'          => substr((string) $request->userAgent(), 0, 1000),
+                'device_info'         => $this->extractDeviceInfo($request),
+                'signed_at'           => now(),
+            ]);
+
+            $locked->update(['statut' => 'signee']);
+
+            return $signature;
+        });
 
         // Génération PDF asynchrone (queue)
         // i18n : transmet la locale active au job async pour que le PDF

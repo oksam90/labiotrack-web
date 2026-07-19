@@ -82,6 +82,8 @@ return [
     'success_deleted' => 'Supprimé avec succès.',
     'success_updated' => 'Modifié avec succès.',
     'error_generic'   => 'Une erreur est survenue.',
+    'errors_label'    => 'Erreurs :',
+    'access_denied'   => 'Accès non autorisé : votre rôle ne vous permet pas d’accéder à cette section.',
     'confirm_delete'  => 'Confirmer la suppression ?',
     'confirm_action'  => 'Confirmer cette action ?',
 

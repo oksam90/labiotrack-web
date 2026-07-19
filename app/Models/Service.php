@@ -13,8 +13,9 @@ class Service extends Model
     protected $fillable = ['etablissement_id','nom','description','responsable','actif'];
     protected $casts    = ['actif' => 'boolean'];
 
-    public function declarations() { return $this->hasMany(Declaration::class); }
-    public function checklists()   { return $this->hasMany(Checklist::class); }
+    // Le détail des déclarations passe désormais par declaration_lignes.
+    public function declarationLignes() { return $this->hasMany(DeclarationLigne::class); }
+    public function checklists()        { return $this->hasMany(Checklist::class); }
 
     public function scopeActif($query) { return $query->where('actif', true); }
 }
