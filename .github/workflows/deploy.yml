@@ -37,7 +37,12 @@ jobs:
             # ── 1. Pull du code (sans toucher storage/bootstrap) ────
             cd /docker/labiotrack-web/code
             git fetch origin master
-            git checkout origin/master -- $(git diff --name-only HEAD origin/master | grep -v '^storage/' | grep -v '^bootstrap/cache/')
+            # Fichiers modifiés/ajoutés (hors storage & cache runtime) → version origin.
+            # --diff-filter=d exclut les suppressions (sinon `git checkout` échoue
+            # sur un pathspec absent d'origin, cf. suppression de vues).
+            git diff --name-only --diff-filter=d HEAD origin/master | grep -v '^storage/' | grep -v '^bootstrap/cache/' | xargs -r git checkout origin/master --
+            # Fichiers supprimés dans origin → on les retire aussi du working tree.
+            git diff --name-only --diff-filter=D HEAD origin/master | grep -v '^storage/' | grep -v '^bootstrap/cache/' | xargs -r rm -f
             git reset --soft origin/master
 
             # ── 2. Permissions www-data (avant composer pour eviter erreurs) ──
