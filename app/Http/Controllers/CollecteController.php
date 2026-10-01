@@ -206,7 +206,7 @@ class CollecteController extends Controller
         $collecte = $query->firstOrFail();
 
         if ($collecte->bordereau_pdf_path
-            && Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            && Storage::disk('local')->exists($collecte->bordereau_pdf_path)) {
             return redirect()->route('collectes.bordereau.download', $collecte->id);
         }
 
@@ -226,11 +226,11 @@ class CollecteController extends Controller
         $collecte = $query->firstOrFail();
 
         if (! $collecte->bordereau_pdf_path
-            || ! Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            || ! Storage::disk('local')->exists($collecte->bordereau_pdf_path)) {
             return back()->with('error', __('collectes.bordereau_not_ready'));
         }
 
-        return Storage::disk('public')->download(
+        return Storage::disk('local')->download(
             $collecte->bordereau_pdf_path,
             "bordereau_{$collecte->numero_bordereau}.pdf"
         );

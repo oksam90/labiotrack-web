@@ -10,7 +10,15 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $pw = Hash::make('password'); // Mot de passe par défaut : password
+        // SECURITY : comptes de DÉMO dont le mot de passe est publié dans le
+        // dépôt. Jamais en production ; ailleurs, SEED_USER_PASSWORD permet
+        // d'éviter « password » (ex. environnement de recette exposé).
+        if (app()->environment('production')) {
+            $this->command?->error('UserSeeder ignoré : comptes de démonstration interdits en production.');
+            return;
+        }
+
+        $pw = Hash::make(env('SEED_USER_PASSWORD') ?: 'password');
 
         $etabs = DB::table('etablissements')->orderBy('id')->get()->keyBy('slug');
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -95,13 +97,11 @@ class DestructionController extends Controller
         $pdf  = Pdf::loadView('destructions.certificat_pdf',
             compact('destruction','collecte','etablissement','certificatNum','prestataire'));
         $pdf->setPaper('A4');
-        // Créer le dossier s'il n'existe pas
-        $dossier = storage_path('app/public/certificats');
-        if (! is_dir($dossier)) {
-            mkdir($dossier, 0755, true); // true = création récursive
-        }
-        $path = 'certificats/cert_' . $id . '.pdf';
-        $pdf->save(storage_path('app/public/' . $path));
+        // SECURITY : disque PRIVÉ — jamais sous /storage public (document légal
+        // nominatif). Le téléchargement passe par certificatPdf(), qui contrôle
+        // le périmètre de l'utilisateur.
+        $path = 'certificats/' . $collecte->etablissement_id . '/' . Str::uuid() . '.pdf';
+        Storage::disk('local')->put($path, $pdf->output());
         DB::table('destructions')->where('id', $id)->update(['certificat_path' => $path]);
 
         DB::table('alertes')->insert([

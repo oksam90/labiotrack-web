@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Services\CacheService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -62,13 +64,11 @@ class RapportController extends Controller
 
         $pdf = Pdf::loadView('rapports.rapport_pdf', compact('data', 'etablissement', 'request'));
 
-        $dossier = storage_path('app/public/rapports');
-        if (! is_dir($dossier)) {
-            mkdir($dossier, 0755, true);
-        }
-
-        $path = 'rapports/rapport_' . now()->format('Ymd_His') . '.pdf';
-        $pdf->save(storage_path('app/public/' . $path));
+        // SECURITY : disque PRIVÉ + nom unique. L'ancien nom horodaté à la
+        // seconde était devinable et pouvait être écrasé par le rapport d'une
+        // autre structure généré au même instant.
+        $path = 'rapports/' . $etabId . '/' . now()->format('Ymd_His') . '_' . Str::uuid() . '.pdf';
+        Storage::disk('local')->put($path, $pdf->output());
 
         $rapportId = DB::table('rapports')->insertGetId([
             'etablissement_id' => $etabId,
@@ -93,12 +93,11 @@ class RapportController extends Controller
         $user->filtreEtab($query);
         $rapport = $query->firstOrFail();
 
-        $fichier = storage_path('app/public/' . $rapport->fichier_path);
-        if (! file_exists($fichier)) {
+        if (! $rapport->fichier_path || ! Storage::disk('local')->exists($rapport->fichier_path)) {
             abort(404, __('rapports.errors_file_missing'));
         }
 
-        return response()->file($fichier);
+        return response()->file(Storage::disk('local')->path($rapport->fichier_path));
     }
 
     public function analyseFinanciere()
