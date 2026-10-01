@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -212,8 +213,10 @@ class AdminController extends Controller
                       $sub->select('id')->from('etablissements')->where('reseau_id', $user->reseau_id);
                   });
             });
-        } elseif (! $user->isSuperAdmin() && $user->etablissement_id) {
-            $query->where('users.etablissement_id', $user->etablissement_id);
+        } elseif (! $user->isSuperAdmin()) {
+            // Admin local → son établissement. Fail-closed : sans établissement
+            // (ou admin_reseau sans réseau) il ne voit personne, et non tout le monde.
+            $query->where('users.etablissement_id', $user->etablissement_id ?? 0);
         }
 
         $users          = $query->paginate(10);
@@ -225,8 +228,10 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         $q = DB::table('etablissements')->where('actif', 1)->orderBy('nom');
-        if ($user->isAdminReseau() && $user->reseau_id) {
-            $q->where('reseau_id', $user->reseau_id);
+        if ($user->isAdminReseau()) {
+            $q->where('reseau_id', $user->reseau_id ?? 0);
+        } elseif (! $user->isSuperAdmin()) {
+            $q->where('id', $user->etablissement_id ?? 0); // admin local : son étab
         }
         return $q->get();
     }
@@ -251,51 +256,20 @@ class AdminController extends Controller
             'prenom'   => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire,client_signataire',
+            'role'     => ['required', Rule::in(\App\Models\User::ROLES)],
             'reseau_id'        => 'nullable|exists:reseaux,id',
             'etablissement_id' => 'nullable|exists:etablissements,id',
         ]);
 
         $user = Auth::user();
 
-        // SECURITY : seul le superadmin peut créer un AdminRéseau
-        if ($request->role === 'admin_reseau' && ! $user->isSuperAdmin()) {
-            abort(403, __('admin.errors_admin_reseau_create_superadmin_only'));
-        }
+        // SECURITY : liste blanche des rôles attribuables par l'acteur
+        // (un admin ne peut créer ni superadmin ni admin_reseau).
+        abort_unless(in_array($request->role, $user->assignableRoles(), true), 403,
+            __('admin.errors_role_not_assignable'));
 
-        $etabId   = $request->etablissement_id ?: null;
-        $reseauId = $request->reseau_id ?: null;
-
-        // AdminRéseau créant un user → forcer le rattachement à son réseau
-        if ($user->isAdminReseau()) {
-            $reseauId = $user->reseau_id;
-            // Vérifier que l'établissement choisi appartient à son réseau
-            if ($etabId) {
-                $etab = DB::table('etablissements')->find($etabId);
-                abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
-                    __('admin.errors_admin_reseau_etab_not_in_network'));
-            }
-        }
-
-        // Admin local : force son établissement pour les rôles locaux
-        if ($user->isAdmin() && ! $user->isSuperAdmin() && ! $user->isAdminReseau()
-            && $user->etablissement_id
-            && ! in_array($request->role, ['collecteur','prestataire','admin_reseau','superadmin'])) {
-            $etabId = $user->etablissement_id;
-        }
-
-        // client_signataire : SÉCURITÉ — un établissement est obligatoire
-        // (sa fonction unique = signer pour son étab).
-        if ($request->role === 'client_signataire' && ! $etabId) {
-            abort(422, __('admin.errors_client_signataire_needs_etab'));
-        }
-
-        // collecteur / prestataire : SÉCURITÉ — rattachement réseau obligatoire.
-        // Leur périmètre = tous les établissements de CE réseau ; sans réseau
-        // ils ne verraient rien (fail-closed) → on bloque à la création.
-        if (in_array($request->role, ['collecteur', 'prestataire'], true) && ! $reseauId) {
-            abort(422, __('admin.errors_collecteur_needs_reseau'));
-        }
+        [$etabId, $reseauId] = $this->resolveRattachement(
+            $user, $request->role, $request->input('etablissement_id'), $request->input('reseau_id'));
 
         DB::table('users')->insert([
             'etablissement_id' => $etabId,
@@ -305,7 +279,7 @@ class AdminController extends Controller
             'email'            => $request->email,
             'password'         => Hash::make($request->password),
             'role'             => $request->role,
-            'telephone'        => $request->telephone ?: null,
+            'telephone'        => $request->input('telephone') ?: null,
             'actif'            => 1,
             'created_at'       => now(),
             'updated_at'       => now(),
@@ -316,19 +290,7 @@ class AdminController extends Controller
 
     public function editUser($id)
     {
-        $user           = DB::table('users')->find($id);
-        abort_if(! $user, 404);
-
-        // SECURITY : AdminRéseau ne peut éditer que les utilisateurs de son réseau
-        $current = Auth::user();
-        if ($current->isAdminReseau() && $current->reseau_id) {
-            $allowed = $user->reseau_id === $current->reseau_id;
-            if (! $allowed && $user->etablissement_id) {
-                $etab = DB::table('etablissements')->find($user->etablissement_id);
-                $allowed = $etab && $etab->reseau_id === $current->reseau_id;
-            }
-            abort_unless($allowed, 403, __('admin.errors_user_not_in_network'));
-        }
+        $user = $this->findManageableUser($id);
 
         $etablissements = $this->etablissementsAccessibles();
         $reseaux        = $this->reseauxAccessibles();
@@ -337,11 +299,14 @@ class AdminController extends Controller
 
     public function updateUser(Request $request, $id)
     {
+        $target = $this->findManageableUser($id);
+        $actor  = Auth::user();
+
         $rules = [
             'nom'      => 'required|string|max:100',
             'prenom'   => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email,'.$id,
-            'role'     => 'required|in:superadmin,admin,admin_reseau,qhse,agent,collecteur,prestataire,client_signataire',
+            'email'    => 'required|email|unique:users,email,'.$target->id,
+            'role'     => ['required', Rule::in(\App\Models\User::ROLES)],
             'reseau_id'        => 'nullable|exists:reseaux,id',
             'etablissement_id' => 'nullable|exists:etablissements,id',
         ];
@@ -354,25 +319,38 @@ class AdminController extends Controller
         // 'custom' et 'attributes' — pas besoin de passer $messages ici)
         $request->validate($rules);
 
-        // SECURITY : seul superadmin peut promouvoir admin_reseau
-        if ($request->role === 'admin_reseau' && ! Auth::user()->isSuperAdmin()) {
-            abort(403, __('admin.errors_admin_reseau_promote_superadmin_only'));
+        $isSelf = (int) $target->id === (int) $actor->id;
+
+        // SECURITY : hors superadmin, on ne modifie jamais son propre rôle
+        // (auto-promotion) et on n'attribue qu'un rôle de sa liste blanche.
+        if (! $actor->isSuperAdmin()) {
+            if ($isSelf) {
+                abort_unless($request->role === $target->role, 403, __('admin.errors_cant_change_own_role'));
+            } else {
+                abort_unless(in_array($request->role, $actor->assignableRoles(), true), 403,
+                    __('admin.errors_role_not_assignable'));
+            }
         }
 
-        $data = $request->only(['nom','prenom','email','role','etablissement_id','reseau_id','telephone']);
-        $data['etablissement_id'] = $data['etablissement_id'] ?: null;
-        $data['reseau_id']        = $data['reseau_id'] ?: null;
-        $data['telephone']        = $data['telephone'] ?: null;
+        [$etabId, $reseauId] = $this->resolveRattachement(
+            $actor, $request->role, $request->input('etablissement_id'), $request->input('reseau_id'), $target);
 
-        // collecteur / prestataire : rattachement réseau obligatoire (cf. storeUser)
-        if (in_array($request->role, ['collecteur', 'prestataire'], true) && ! $data['reseau_id']) {
-            abort(422, __('admin.errors_collecteur_needs_reseau'));
-        }
+        $data = [
+            'nom'              => $request->nom,
+            'prenom'           => $request->prenom,
+            'email'            => $request->email,
+            'role'             => $request->role,
+            'etablissement_id' => $etabId,
+            'reseau_id'        => $reseauId,
+            'telephone'        => $request->input('telephone') ?: null,
+            'updated_at'       => now(),
+        ];
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $data['password']       = Hash::make($request->password);
+            $data['remember_token'] = null; // invalide les cookies « se souvenir de moi »
         }
-        $data['updated_at'] = now();
-        DB::table('users')->where('id', $id)->update($data);
+
+        DB::table('users')->where('id', $target->id)->update($data);
         return redirect()->route('admin.utilisateurs.index')->with('success', __('admin.flash_user_updated'));
     }
 
@@ -386,13 +364,13 @@ class AdminController extends Controller
         // cascadeOnDelete) et détruirait la preuve légale. On efface donc les
         // données personnelles et on désactive le compte, en conservant les
         // enregistrements métier dé-identifiés.
-        $user = DB::table('users')->where('id', $id)->whereNull('anonymized_at')->first();
-        abort_if(! $user, 404);
+        $user = $this->findManageableUser($id);
+        abort_if($user->anonymized_at, 404);
 
-        DB::table('users')->where('id', $id)->update([
+        DB::table('users')->where('id', $user->id)->update([
             'nom'           => 'Utilisateur',
             'prenom'        => 'Anonymisé',
-            'email'         => 'anonymise+' . $id . '@labiotrack.invalid',
+            'email'         => 'anonymise+' . $user->id . '@labiotrack.invalid',
             'telephone'     => null,
             'password'      => bcrypt(\Illuminate\Support\Str::random(40)),
             'remember_token'=> null,
@@ -409,13 +387,70 @@ class AdminController extends Controller
     public function toggleUser($id)
     {
         abort_if($id == Auth::id(), 403, __('admin.errors_cant_deactivate_self'));
-        $user = DB::table('users')->find($id);
-        abort_if(! $user, 404);
-        DB::table('users')->where('id', $id)->update([
+        $user = $this->findManageableUser($id);
+        DB::table('users')->where('id', $user->id)->update([
             'actif'      => $user->actif ? 0 : 1,
             'updated_at' => now(),
         ]);
         return back()->with('success', __('admin.flash_user_status_changed'));
+    }
+
+    /**
+     * Charge un compte et vérifie que l'acteur a le droit de le gérer
+     * (User::canManageUser). Point de passage unique des actions sur un
+     * utilisateur existant : édition, modification, anonymisation, (dés)activation.
+     */
+    private function findManageableUser($id): object
+    {
+        $user = DB::table('users')->find($id);
+        abort_if(! $user, 404);
+        abort_unless(Auth::user()->canManageUser($user), 403, __('admin.errors_user_out_of_scope'));
+        return $user;
+    }
+
+    /**
+     * Détermine [etablissement_id, reseau_id] d'un compte créé / modifié,
+     * en imposant le périmètre de l'acteur :
+     *  - superadmin   : valeurs saisies
+     *  - soi-même     : rattachement actuel inchangé (pas d'auto-mutation)
+     *  - admin_reseau : son réseau ; l'établissement doit en faire partie
+     *  - admin        : son établissement
+     */
+    private function resolveRattachement($actor, string $role, $etabId, $reseauId, ?object $target = null): array
+    {
+        $etabId   = $etabId ?: null;
+        $reseauId = $reseauId ?: null;
+
+        if ($target && ! $actor->isSuperAdmin() && (int) $target->id === (int) $actor->id) {
+            return [$target->etablissement_id, $target->reseau_id];
+        }
+
+        if ($actor->isAdminReseau()) {
+            $reseauId = $actor->reseau_id;
+            if ($etabId) {
+                $etab = DB::table('etablissements')->find($etabId);
+                abort_unless($etab && (int) $etab->reseau_id === (int) $actor->reseau_id, 403,
+                    __('admin.errors_admin_reseau_etab_not_in_network'));
+            }
+        } elseif (! $actor->isSuperAdmin()) {
+            $etabId   = $actor->etablissement_id;
+            $reseauId = null; // rôles locaux : le réseau se déduit de l'établissement
+        }
+
+        // client_signataire : SÉCURITÉ — un établissement est obligatoire
+        // (sa fonction unique = signer pour son étab).
+        if ($role === 'client_signataire' && ! $etabId) {
+            abort(422, __('admin.errors_client_signataire_needs_etab'));
+        }
+
+        // collecteur / prestataire : SÉCURITÉ — rattachement réseau obligatoire.
+        // Leur périmètre = tous les établissements de CE réseau ; sans réseau
+        // ils ne verraient rien (fail-closed) → on bloque.
+        if (in_array($role, ['collecteur', 'prestataire'], true) && ! $reseauId) {
+            abort(422, __('admin.errors_collecteur_needs_reseau'));
+        }
+
+        return [$etabId, $reseauId];
     }
 
     // ── Services ─────────────────────────────────────────────────────────────

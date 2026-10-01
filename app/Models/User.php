@@ -95,6 +95,61 @@ class User extends Authenticatable implements CanResetPasswordContract
         return in_array($this->role, ['admin', 'admin_reseau', 'superadmin']);
     }
 
+    /** Tous les rôles applicatifs (ordre d'affichage des formulaires). */
+    public const ROLES = [
+        'superadmin', 'admin', 'admin_reseau', 'qhse', 'agent',
+        'collecteur', 'prestataire', 'client_signataire',
+    ];
+
+    /**
+     * Rôles que l'utilisateur courant peut ATTRIBUER (création / modification).
+     * Source unique pour le formulaire ET le contrôleur : une restriction
+     * appliquée uniquement dans la vue est contournable par un POST forgé.
+     */
+    public function assignableRoles(): array
+    {
+        return match ($this->role) {
+            'superadmin'   => self::ROLES,
+            'admin_reseau' => ['admin', 'qhse', 'agent', 'client_signataire'],
+            'admin'        => ['qhse', 'agent', 'client_signataire'],
+            default        => [],
+        };
+    }
+
+    /**
+     * Peut-il gérer (éditer, modifier, désactiver, anonymiser) ce compte ?
+     * $target : modèle User ou ligne DB::table('users').
+     *
+     *  - superadmin   : tous les comptes
+     *  - admin_reseau : comptes de rôle attribuable, dans SON réseau
+     *  - admin        : comptes de rôle attribuable, dans SON établissement
+     *  - soi-même     : toujours (le contrôleur fige alors rôle et rattachement)
+     *
+     * Fail-closed : un admin_reseau sans réseau / admin sans établissement
+     * ne gère personne d'autre que lui-même.
+     */
+    public function canManageUser(object $target): bool
+    {
+        if ($this->isSuperAdmin()) return true;
+        if ((int) $target->id === (int) $this->id) return true;
+        if (! in_array($target->role, $this->assignableRoles(), true)) return false;
+
+        if ($this->isAdminReseau()) {
+            if (! $this->reseau_id) return false;
+            if ((int) $target->reseau_id === (int) $this->reseau_id) return true;
+            return $target->etablissement_id
+                && (int) Etablissement::withoutGlobalScopes()
+                    ->whereKey($target->etablissement_id)->value('reseau_id') === (int) $this->reseau_id;
+        }
+
+        if ($this->role === 'admin') {
+            return $this->etablissement_id
+                && (int) $target->etablissement_id === (int) $this->etablissement_id;
+        }
+
+        return false;
+    }
+
     /**
      * Récupère l'ID du réseau de l'utilisateur (via reseau_id direct ou
      * via etablissement.reseau_id). Retourne null si superadmin ou
@@ -103,7 +158,14 @@ class User extends Authenticatable implements CanResetPasswordContract
     public function getReseauIdAttribute($value)
     {
         if ($value !== null) return $value;
-        return $this->etablissement?->reseau_id;
+        if (! $this->etablissement_id) return null;
+
+        // Sans global scope : la relation `etablissement` passe par TenantScope,
+        // qui relit $user->reseau_id → récursion infinie (500 sur toutes les
+        // pages pour un admin rattaché à un établissement sans reseau_id direct).
+        // Mémoïsé par instance : l'accesseur est lu à chaque requête scopée.
+        return once(fn () => Etablissement::withoutGlobalScopes()
+            ->whereKey($this->etablissement_id)->value('reseau_id'));
     }
 
     /**
