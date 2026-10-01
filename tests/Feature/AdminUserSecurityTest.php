@@ -149,4 +149,69 @@ class AdminUserSecurityTest extends TestCase
             ->assertSee('value="admin"', false)
             ->assertDontSee('value="superadmin"', false);
     }
+
+    public function test_un_admin_reseau_cree_collecteur_et_prestataire_dans_son_reseau(): void
+    {
+        $r1 = $this->makeReseau('R1');
+        $r2 = $this->makeReseau('R2');
+        $ar = $this->makeUser('admin_reseau', null, $r1->id);
+
+        foreach (['collecteur', 'prestataire'] as $role) {
+            $this->actingAs($ar)->post('/admin/utilisateurs', $this->payload([
+                'email' => "{$role}-r1@test.sn", 'role' => $role,
+                'reseau_id' => $r2->id, // tentative d'un autre réseau : ignorée
+                'password' => 'password1', 'password_confirmation' => 'password1',
+            ]))->assertRedirect();
+
+            $row = DB::table('users')->where('email', "{$role}-r1@test.sn")->first();
+            $this->assertSame($role, $row->role);
+            $this->assertSame($r1->id, (int) $row->reseau_id, 'Rattaché de force au réseau de l\'admin.');
+        }
+    }
+
+    public function test_un_admin_reseau_modifie_et_desactive_un_collecteur_de_son_reseau(): void
+    {
+        $r          = $this->makeReseau();
+        $ar         = $this->makeUser('admin_reseau', null, $r->id);
+        $collecteur = $this->makeUser('collecteur', null, $r->id);
+
+        $this->actingAs($ar)->put("/admin/utilisateurs/{$collecteur->id}", $this->payload([
+            'nom' => 'Renommé', 'email' => $collecteur->email, 'role' => 'collecteur', 'telephone' => '770000000',
+        ]))->assertRedirect();
+
+        $row = DB::table('users')->find($collecteur->id);
+        $this->assertSame('Renommé', $row->nom);
+        $this->assertSame('collecteur', $row->role);
+        $this->assertSame($r->id, (int) $row->reseau_id);
+
+        $this->actingAs($ar)->post("/admin/utilisateurs/{$collecteur->id}/toggle")->assertRedirect();
+        $this->assertSame(0, (int) DB::table('users')->find($collecteur->id)->actif);
+    }
+
+    public function test_un_admin_reseau_ne_touche_pas_aux_collecteurs_d_un_autre_reseau(): void
+    {
+        $r1 = $this->makeReseau('R1');
+        $r2 = $this->makeReseau('R2');
+        $ar = $this->makeUser('admin_reseau', null, $r1->id);
+        $collecteurR2 = $this->makeUser('prestataire', null, $r2->id);
+
+        $this->actingAs($ar)->get("/admin/utilisateurs/{$collecteurR2->id}/edit")->assertForbidden();
+        $this->actingAs($ar)->post("/admin/utilisateurs/{$collecteurR2->id}/toggle")->assertForbidden();
+        $this->actingAs($ar)->put("/admin/utilisateurs/{$collecteurR2->id}", $this->payload([
+            'email' => $collecteurR2->email, 'role' => 'prestataire',
+        ]))->assertForbidden();
+    }
+
+    public function test_la_liste_n_affiche_les_actions_que_pour_les_comptes_gerables(): void
+    {
+        $r          = $this->makeReseau();
+        $ar         = $this->makeUser('admin_reseau', null, $r->id);
+        $autreAr    = $this->makeUser('admin_reseau', null, $r->id); // même rang : non gérable
+        $collecteur = $this->makeUser('collecteur', null, $r->id);
+
+        $this->actingAs($ar)->get('/admin/utilisateurs')->assertOk()
+            ->assertSee(route('admin.utilisateurs.edit', $collecteur->id), false)
+            ->assertDontSee(route('admin.utilisateurs.edit', $autreAr->id), false)
+            ->assertDontSee(route('admin.utilisateurs.toggle', $ar->id), false); // pas d'auto-désactivation
+    }
 }

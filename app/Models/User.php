@@ -110,7 +110,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     {
         return match ($this->role) {
             'superadmin'   => self::ROLES,
-            'admin_reseau' => ['admin', 'qhse', 'agent', 'client_signataire'],
+            'admin_reseau' => ['admin', 'qhse', 'agent', 'collecteur', 'prestataire', 'client_signataire'],
             'admin'        => ['qhse', 'agent', 'client_signataire'],
             default        => [],
         };
@@ -121,7 +121,8 @@ class User extends Authenticatable implements CanResetPasswordContract
      * $target : modèle User ou ligne DB::table('users').
      *
      *  - superadmin   : tous les comptes
-     *  - admin_reseau : comptes de rôle attribuable, dans SON réseau
+     *  - admin_reseau : comptes de rôle attribuable, dans SON réseau (y compris
+     *                   collecteurs / prestataires rattachés à ce réseau)
      *  - admin        : comptes de rôle attribuable, dans SON établissement
      *  - soi-même     : toujours (le contrôleur fige alors rôle et rattachement)
      *
