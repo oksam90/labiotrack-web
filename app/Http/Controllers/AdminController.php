@@ -321,15 +321,14 @@ class AdminController extends Controller
 
         $isSelf = (int) $target->id === (int) $actor->id;
 
-        // SECURITY : hors superadmin, on ne modifie jamais son propre rôle
-        // (auto-promotion) et on n'attribue qu'un rôle de sa liste blanche.
-        if (! $actor->isSuperAdmin()) {
-            if ($isSelf) {
-                abort_unless($request->role === $target->role, 403, __('admin.errors_cant_change_own_role'));
-            } else {
-                abort_unless(in_array($request->role, $actor->assignableRoles(), true), 403,
-                    __('admin.errors_role_not_assignable'));
-            }
+        // SECURITY : personne — superadmin compris — ne change son propre rôle
+        // (auto-promotion, ou superadmin qui se rétrograde et perd l'accès).
+        // Pour autrui, on n'attribue qu'un rôle de sa liste blanche.
+        if ($isSelf) {
+            abort_unless($request->role === $target->role, 403, __('admin.errors_cant_change_own_role'));
+        } else {
+            abort_unless(in_array($request->role, $actor->assignableRoles(), true), 403,
+                __('admin.errors_role_not_assignable'));
         }
 
         [$etabId, $reseauId] = $this->resolveRattachement(

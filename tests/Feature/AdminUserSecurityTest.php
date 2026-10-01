@@ -214,4 +214,80 @@ class AdminUserSecurityTest extends TestCase
             ->assertDontSee(route('admin.utilisateurs.edit', $autreAr->id), false)
             ->assertDontSee(route('admin.utilisateurs.toggle', $ar->id), false); // pas d'auto-désactivation
     }
+
+    // ── Interdictions explicites (règles métier validées) ─────────────────
+
+    public function test_interdit_d_agir_sur_collecteur_ou_prestataire_d_un_autre_reseau(): void
+    {
+        $r1 = $this->makeReseau('R1');
+        $r2 = $this->makeReseau('R2');
+        $ar = $this->makeUser('admin_reseau', null, $r1->id);
+
+        foreach (['collecteur', 'prestataire'] as $role) {
+            $cible = $this->makeUser($role, null, $r2->id);
+
+            $this->actingAs($ar)->get("/admin/utilisateurs/{$cible->id}/edit")->assertForbidden();
+            $this->actingAs($ar)->put("/admin/utilisateurs/{$cible->id}", $this->payload([
+                'email' => $cible->email, 'role' => $role,
+            ]))->assertForbidden();
+            $this->actingAs($ar)->post("/admin/utilisateurs/{$cible->id}/toggle")->assertForbidden();
+            $this->actingAs($ar)->delete("/admin/utilisateurs/{$cible->id}")->assertForbidden();
+
+            $row = DB::table('users')->find($cible->id);
+            $this->assertSame(1, (int) $row->actif);
+            $this->assertNull($row->anonymized_at);
+        }
+    }
+
+    public function test_interdit_a_l_admin_reseau_de_creer_un_superadmin_ou_un_admin_reseau(): void
+    {
+        $ar = $this->makeUser('admin_reseau', null, $this->makeReseau()->id);
+
+        foreach (['superadmin', 'admin_reseau'] as $i => $role) {
+            $this->actingAs($ar)->post('/admin/utilisateurs', $this->payload([
+                'email' => "interdit{$i}@test.sn", 'role' => $role,
+                'password' => 'password1', 'password_confirmation' => 'password1',
+            ]))->assertForbidden();
+        }
+        $this->assertSame(0, DB::table('users')->where('email', 'like', 'interdit%')->count());
+    }
+
+    public function test_interdit_a_l_admin_reseau_de_modifier_un_autre_admin_reseau_ou_de_promouvoir(): void
+    {
+        $r       = $this->makeReseau();
+        $ar      = $this->makeUser('admin_reseau', null, $r->id);
+        $autreAr = $this->makeUser('admin_reseau', null, $r->id); // même réseau
+        $qhse    = $this->makeUser('qhse', $this->makeEtablissement($r->id)->id);
+
+        $this->actingAs($ar)->put("/admin/utilisateurs/{$autreAr->id}", $this->payload([
+            'email' => $autreAr->email, 'role' => 'admin_reseau',
+        ]))->assertForbidden();
+        $this->actingAs($ar)->post("/admin/utilisateurs/{$autreAr->id}/toggle")->assertForbidden();
+
+        foreach (['superadmin', 'admin_reseau'] as $role) {
+            $this->actingAs($ar)->put("/admin/utilisateurs/{$qhse->id}", $this->payload([
+                'email' => $qhse->email, 'role' => $role, 'etablissement_id' => $qhse->etablissement_id,
+            ]))->assertForbidden();
+        }
+        $this->assertSame('qhse', DB::table('users')->find($qhse->id)->role);
+    }
+
+    public function test_interdit_a_quiconque_de_changer_son_propre_role(): void
+    {
+        $r = $this->makeReseau();
+        $comptes = [
+            ['admin_reseau', $this->makeUser('admin_reseau', null, $r->id), 'superadmin'],
+            ['admin',        $this->makeUser('admin', $this->makeEtablissement($r->id)->id), 'admin_reseau'],
+            ['superadmin',   $this->makeUser('superadmin'), 'qhse'], // rétrogradation aussi interdite
+        ];
+
+        foreach ($comptes as [$roleActuel, $u, $nouveauRole]) {
+            $this->actingAs($u)->put("/admin/utilisateurs/{$u->id}", $this->payload([
+                'email' => $u->email, 'role' => $nouveauRole,
+                'etablissement_id' => $u->etablissement_id ?? '', 'reseau_id' => $u->reseau_id ?? '',
+            ]))->assertForbidden();
+
+            $this->assertSame($roleActuel, DB::table('users')->find($u->id)->role);
+        }
+    }
 }
