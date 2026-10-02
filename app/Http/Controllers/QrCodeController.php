@@ -3,9 +3,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 
 
 // ─── QR CODE CONTROLLER ──────────────────────────────────────────────────────
@@ -13,7 +10,11 @@ class QrCodeController extends Controller
 {
     public function generateLocal($etablissementId)
     {
+        // SECURITY (M6) : DB::table() contourne les scopes — sans ce contrôle,
+        // tout utilisateur connecté lisait la fiche de n'importe quelle structure.
+        abort_unless(Auth::user()->canAccessTenant((int) $etablissementId), 403);
         $etablissement = DB::table('etablissements')->find($etablissementId);
+        abort_if(! $etablissement, 404);
         $qrData        = json_encode(['etablissement_id' => $etablissementId, 'type' => 'local_stockage']);
         return view('qrcode.local', compact('etablissement', 'qrData'));
     }

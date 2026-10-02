@@ -9,6 +9,7 @@ use App\Models\TypeContenant;
 use App\Models\User;
 use App\Scopes\TenantScope;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Logique métier des déclarations multi-lignes (services × contenants).
@@ -36,6 +37,7 @@ class DeclarationService
         $premierService = Service::findOrFail($lignesData[0]['service_id']);
         $etabId = $user->isMultiEtablissement() ? $premierService->etablissement_id : $user->etablissement_id;
         abort_unless($etabId && $user->canAccessTenant((int) $etabId), 403);
+        $this->verifierServicesDeLEtablissement($lignesData, (int) $etabId);
 
         $decl = DB::transaction(function () use ($etabId, $user, $totalNombre, $totalPoids, $notes, $photoPath, $lignesData) {
             $decl = Declaration::withoutGlobalScope(TenantScope::class)->create([
@@ -70,6 +72,7 @@ class DeclarationService
     public function update(Declaration $declaration, array $lignes, ?string $notes): Declaration
     {
         [$lignesData, $totalNombre, $totalPoids] = $this->buildLignes($lignes);
+        $this->verifierServicesDeLEtablissement($lignesData, (int) $declaration->etablissement_id);
 
         DB::transaction(function () use ($declaration, $lignesData, $totalNombre, $totalPoids, $notes) {
             $declaration->lignes()->delete();
@@ -84,6 +87,26 @@ class DeclarationService
         });
 
         return $declaration->refresh();
+    }
+
+    /**
+     * SECURITY (M2) : toutes les lignes doivent porter sur des services de
+     * l'établissement de la déclaration. La validation `exists:services,id`
+     * acceptait n'importe quel service de la plateforme.
+     */
+    private function verifierServicesDeLEtablissement(array $lignesData, int $etabId): void
+    {
+        $ids = array_values(array_unique(array_column($lignesData, 'service_id')));
+        $valides = DB::table('services')
+            ->whereIn('id', $ids)
+            ->where('etablissement_id', $etabId)
+            ->count();
+
+        if ($valides !== count($ids)) {
+            throw ValidationException::withMessages([
+                'lignes' => __('declarations.error_services_other_etab'),
+            ]);
+        }
     }
 
     /**
