@@ -70,4 +70,5 @@ return [
     'show_status'       => 'Status:',
     'btn_validate_receipt' => 'Validate receipt',
     'btn_receipt_validated' => 'Receipt validated',
+    'errors_declarations_out_of_scope' => "Some selected declarations do not belong to this facility or are no longer in storage.",
 ];

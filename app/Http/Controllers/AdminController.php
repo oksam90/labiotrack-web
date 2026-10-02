@@ -6,7 +6,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use App\Models\Etablissement;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -34,6 +36,27 @@ class AdminController extends Controller
             });
         }
         return $query->whereRaw('1 = 0'); // fail-closed : admin réseau sans réseau
+    }
+
+    /**
+     * Charge un établissement (sans scope) et applique EtablissementPolicy :
+     * superadmin partout, admin réseau dans SON réseau uniquement.
+     */
+    private function findEtablissementAutorise($id, string $ability): object
+    {
+        $etab = Etablissement::withoutGlobalScopes()->find($id);
+        abort_if(! $etab, 404, __('admin.errors_etab_not_found'));
+        $this->authorize($ability, $etab);
+        return DB::table('etablissements')->find($id);
+    }
+
+    /** Charge un service et vérifie que son établissement est gérable (manageServices). */
+    private function findServiceAutorise($id): object
+    {
+        $service = DB::table('services')->find($id);
+        abort_if(! $service, 404, __('admin.errors_service_not_found'));
+        $this->findEtablissementAutorise($service->etablissement_id, 'manageServices');
+        return $service;
     }
 
     // ── Établissements ──────────────────────────────────────────────────────
@@ -74,10 +97,13 @@ class AdminController extends Controller
             'reseau_id'        => 'nullable|exists:reseaux,id',
         ]);
 
-        $user      = Auth::user();
-        $reseauId  = $request->reseau_id ?: null;
-        // AdminRéseau : forcer son propre réseau
-        if ($user->isAdminReseau() && $user->reseau_id) {
+        $user = Auth::user();
+        $this->authorize('create', Etablissement::class);
+
+        $reseauId = $request->reseau_id ?: null;
+        // AdminRéseau : toujours son propre réseau (fail-closed s'il n'en a pas).
+        if ($user->isAdminReseau()) {
+            abort_unless($user->reseau_id, 403, __('admin.errors_admin_reseau_etab_not_in_network'));
             $reseauId = $user->reseau_id;
         }
 
@@ -91,16 +117,7 @@ class AdminController extends Controller
 
     public function edit($id)
     {
-        $etablissement = DB::table('etablissements')->find($id);
-        abort_if(! $etablissement, 404, __('admin.errors_etab_not_found'));
-
-        // SECURITY : vérifier accès réseau
-        $user = Auth::user();
-        if (! $user->isSuperAdmin()) {
-            if ($user->isAdminReseau() && $etablissement->reseau_id !== $user->reseau_id) {
-                abort(403, __('admin.errors_admin_reseau_etab_not_in_network'));
-            }
-        }
+        $etablissement = $this->findEtablissementAutorise($id, 'update');
 
         $reseaux = $this->reseauxAccessibles();
         return view('admin.etablissement_form', compact('etablissement', 'reseaux'));
@@ -114,6 +131,8 @@ class AdminController extends Controller
             'adresse'   => 'required|string',
             'reseau_id' => 'nullable|exists:reseaux,id',
         ]);
+
+        $this->findEtablissementAutorise($id, 'update');
 
         $user = Auth::user();
         $data = $request->only(['nom','type','adresse','ville','telephone','email','responsable_qhse','nombre_lits']);
@@ -203,19 +222,9 @@ class AdminController extends Controller
             ->whereNull('users.anonymized_at') // masque les comptes anonymisés (RGPD)
             ->orderByDesc('users.created_at');
 
-        // SUPERADMIN → tous les utilisateurs
-        // ADMIN_RESEAU → utilisateurs du réseau (via etablissement.reseau_id ou users.reseau_id)
-        if ($user->isAdminReseau() && $user->reseau_id) {
-            $query->where(function ($q) use ($user) {
-                $q->where('users.reseau_id', $user->reseau_id)
-                  ->orWhereIn('users.etablissement_id', function ($sub) use ($user) {
-                      $sub->select('id')->from('etablissements')->where('reseau_id', $user->reseau_id);
-                  });
-            });
-        } elseif (! $user->isSuperAdmin()) {
-            // Fail-closed : admin_reseau sans réseau → personne, et non tout le monde.
-            $query->whereRaw('1 = 0');
-        }
+        // Périmètre : superadmin → tous ; admin réseau → comptes de son réseau
+        // (fail-closed s'il n'a pas de réseau).
+        $user->filtreUtilisateurs($query);
 
         $users          = $query->paginate(10);
         $etablissements = $this->etablissementsAccessibles();
@@ -495,6 +504,7 @@ class AdminController extends Controller
 
     public function updateService(Request $request, $id)
     {
+        $this->findServiceAutorise($id);
         $request->validate(['nom' => 'required|string|max:255']);
         DB::table('services')->where('id', $id)->update([
             'nom'         => $request->nom,
@@ -507,6 +517,7 @@ class AdminController extends Controller
 
     public function destroyService($id)
     {
+        $this->findServiceAutorise($id);
         $count = DB::table('declaration_lignes')->where('service_id', $id)->count();
         if ($count > 0) {
             return back()->with('error', __('admin.flash_service_delete_blocked', ['count' => $count]));
@@ -517,8 +528,7 @@ class AdminController extends Controller
 
     public function toggleService($id)
     {
-        $service = DB::table('services')->find($id);
-        abort_if(! $service, 404, __('admin.errors_service_not_found'));
+        $service = $this->findServiceAutorise($id);
 
         DB::table('services')->where('id', $id)->update([
             'actif'      => $service->actif ? 0 : 1,
@@ -599,30 +609,40 @@ class AdminController extends Controller
 
     public function activites()
     {
+        // SECURITY (H6) : indicateurs limités au périmètre de l'utilisateur
+        // (admin réseau → son réseau), et non à toute la plateforme.
+        $user = Auth::user();
+        $etab = fn ($q, $col = 'etablissement_id') => $user->filtreEtab($q, $col)->count();
+
         $stats = [
-            'etablissements'     => DB::table('etablissements')->where('actif', 1)->count(),
-            'users_actifs'       => DB::table('users')->where('actif', 1)->count(),
-            'declarations_today' => DB::table('declarations')->whereDate('created_at', today())->count(),
-            'alertes_nonlues'    => DB::table('alertes')->where('lu', 0)->count(),
-            'collectes_today'    => DB::table('collectes')->whereDate('created_at', today())->count(),
-            'checklists_today'   => DB::table('checklists')->whereDate('created_at', today())->count(),
+            'etablissements'     => $etab(DB::table('etablissements')->where('actif', 1), 'id'),
+            'users_actifs'       => $user->filtreUtilisateurs(DB::table('users')->where('actif', 1))->count(),
+            'declarations_today' => $etab(DB::table('declarations')->whereDate('created_at', today())),
+            'alertes_nonlues'    => $etab(DB::table('alertes')->where('lu', 0)),
+            'collectes_today'    => $etab(DB::table('collectes')->whereDate('created_at', today())),
+            'checklists_today'   => $etab(DB::table('checklists')->whereDate('created_at', today())),
         ];
         return view('admin.activites', compact('stats'));
     }
 
     public function activitesData()
     {
-        $page    = (int) request('page', 1);
-        $perPage = (int) request('per_page', 30);
-        $perPage = min($perPage, 100);
+        $user    = Auth::user();
+        $page    = max(1, (int) request('page', 1));
+        $perPage = min(max(1, (int) request('per_page', 30)), 100);
 
-        $source = DB::table('activites_log')->count() > 0
+        $source = DB::table('activites_log')->exists()
             ? 'activites_log'
             : 'activites_feed';
 
-        $total = DB::table($source)->count();
+        // SECURITY (H6) : flux filtré par établissement du périmètre. Les
+        // événements sans établissement (ex. conversions de rôle) restent
+        // réservés au superadmin.
+        $fluxQuery = $user->filtreEtab(DB::table($source), 'etablissement_id');
 
-        $flux = DB::table($source)
+        $total = (clone $fluxQuery)->count();
+
+        $flux = $fluxQuery
             ->select('type', 'moment', 'acteur', 'etablissement',
                      'description', 'niveau', 'user_id', 'etablissement_id')
             ->orderByDesc('moment')
@@ -630,21 +650,26 @@ class AdminController extends Controller
             ->limit($perPage)
             ->get();
 
-        $today = now()->toDateString();
-        $statsRaw = DB::selectOne("
-            SELECT
-                (SELECT COUNT(*) FROM declarations  WHERE DATE(created_at) = ?) AS declarations_today,
-                (SELECT COUNT(*) FROM alertes       WHERE lu = 0)               AS alertes_nonlues,
-                (SELECT COUNT(*) FROM collectes     WHERE DATE(created_at) = ?) AS collectes_today,
-                (SELECT COUNT(*) FROM checklists    WHERE DATE(created_at) = ?) AS checklists_today,
-                (SELECT COUNT(*) FROM sessions      WHERE last_activity >= ?)   AS users_connectes
-        ", [$today, $today, $today, now()->subMinutes(15)->timestamp]);
+        $etab = fn ($q) => $user->filtreEtab($q)->count();
 
-        $statsLive = (array) $statsRaw;
+        // Sessions actives : uniquement si les sessions sont en base (driver
+        // « database ») — avant, la requête plantait (500) avec le driver fichier.
+        $connectes = Schema::hasTable('sessions')
+            ? DB::table('sessions')
+                ->where('last_activity', '>=', now()->subMinutes(15)->timestamp)
+                ->whereIn('user_id', $user->filtreUtilisateurs(DB::table('users'))->select('users.id'))
+                ->count()
+            : '—';
 
         return response()->json([
             'flux'  => $flux,
-            'stats' => $statsLive,
+            'stats' => [
+                'declarations_today' => $etab(DB::table('declarations')->whereDate('created_at', today())),
+                'alertes_nonlues'    => $etab(DB::table('alertes')->where('lu', 0)),
+                'collectes_today'    => $etab(DB::table('collectes')->whereDate('created_at', today())),
+                'checklists_today'   => $etab(DB::table('checklists')->whereDate('created_at', today())),
+                'users_connectes'    => $connectes,
+            ],
             'pagination' => [
                 'current_page' => $page,
                 'per_page'     => $perPage,

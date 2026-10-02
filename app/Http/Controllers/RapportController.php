@@ -109,20 +109,19 @@ class RapportController extends Controller
     {
         $user    = Auth::user();
         $mois    = Carbon::now()->format('Y-m');
-        $etabId  = $user->isGlobal() ? null : $user->etablissement_id;
 
+        // SECURITY (H4) : clé de cache propre au PÉRIMÈTRE (global / réseau /
+        // établissement). Avant, prestataire et admin réseau sans établissement
+        // partageaient la clé « global » du superadmin (fuite entre réseaux).
         $cached = Cache::remember(
-            CacheService::financierKey($etabId, $mois),
+            CacheService::financierKey(CacheService::perimetre($user), $mois),
             CacheService::TTL_FINANCIER,
             function () use ($user, $mois) {
 
                 // Le détail (service × contenant × nombre) vit dans
                 // declaration_lignes. On joint l'en-tête `declarations` pour le
                 // filtre mois (date_declaration) + périmètre établissement.
-                $etabFilter = function ($q) use ($user) {
-                    if ($user->isGlobal()) return $q;
-                    return $q->where('declarations.etablissement_id', $user->etablissement_id);
-                };
+                $etabFilter = fn ($q) => $user->filtreEtab($q, 'declarations.etablissement_id');
 
                 $coutParContenant = $etabFilter(
                     DB::table('declaration_lignes')
@@ -133,7 +132,7 @@ class RapportController extends Controller
                             SUM(declaration_lignes.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
                         ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('type_contenants.id', 'type_contenants.nom', 'type_contenants.cout_unitaire')
-                )->paginate(10, ['*'], 'contenants_page');
+                )->get(); // liste complète : la vue n'affiche pas de pagination et totalise
 
                 $coutSacs = $etabFilter(
                     DB::table('declaration_lignes')
@@ -165,7 +164,7 @@ class RapportController extends Controller
                         ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('services.id', 'services.nom')
                         ->orderByDesc('cout_total')
-                )->paginate(10, ['*'], 'services_page');
+                )->get();
 
                 return compact(
                     'coutParContenant', 'sacJaune', 'sacNoir',

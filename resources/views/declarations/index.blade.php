@@ -7,7 +7,9 @@
         <h4 class="fw-bold mb-0">{{ __('declarations.header_index') }}</h4>
         <small class="text-muted">{{ __('declarations.subtitle_index') }}</small>
     </div>
+    @can('create', \App\Models\Declaration::class)
     <a href="{{ route('declarations.create') }}" class="btn btn-primary"><i class="bi bi-plus me-1"></i>{{ __('declarations.btn_new') }}</a>
+    @endcan
 </div>
 
 <!-- Filtres -->

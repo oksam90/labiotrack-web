@@ -18,23 +18,25 @@ class SuperAdminController extends Controller
         $mois = Carbon::now()->format('Y-m');
 
         // ── Périmètre : superadmin/global → tous réseaux ; admin_reseau/admin → leur réseau
-        $reseauId = ($user->isReseauScoped() && $user->reseau_id) ? (int) $user->reseau_id : null;
+        // Rôle réseau → filtré sur SON réseau ; sans réseau → 0 (ne voit rien,
+        // au lieu des indicateurs de toute la plateforme). Superadmin → null (global).
+        $reseauId = $user->isReseauScoped() ? (int) $user->reseau_id : null;
 
         // Conditions de filtre dynamiques selon le périmètre
         // Sur etablissements directement → reseau_id
         // Sur tables liées (declarations, destructions…) → sous-requête sur etablissement_id
-        $whereEtab = $reseauId ? "WHERE reseau_id = {$reseauId}" : "";
-        $andEtabActif = $reseauId
+        $whereEtab = $reseauId !== null ? "WHERE reseau_id = {$reseauId}" : "";
+        $andEtabActif = $reseauId !== null
             ? "AND reseau_id = {$reseauId}"
             : "";
-        $inEtabIds = $reseauId
+        $inEtabIds = $reseauId !== null
             ? "AND etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId})"
             : "";
-        $inEtabUsers = $reseauId
+        $inEtabUsers = $reseauId !== null
             ? "AND (etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId}) OR reseau_id = {$reseauId})"
             : "";
         // Pour destructions : pas de etablissement_id direct → JOIN via collectes
-        $destFilter = $reseauId
+        $destFilter = $reseauId !== null
             ? "AND collecte_id IN (
                   SELECT id FROM collectes
                   WHERE etablissement_id IN (SELECT id FROM etablissements WHERE reseau_id = {$reseauId})
@@ -119,7 +121,7 @@ class SuperAdminController extends Controller
 
             $declQ = DB::table('declarations')
                 ->whereRaw("DATE_FORMAT(date_declaration,'%Y-%m') = ?", [$d->format('Y-m')]);
-            if ($reseauId) {
+            if ($reseauId !== null) {
                 $declQ->whereIn('etablissement_id', function ($q) use ($reseauId) {
                     $q->select('id')->from('etablissements')->where('reseau_id', $reseauId);
                 });
@@ -136,7 +138,7 @@ class SuperAdminController extends Controller
             ->join('etablissements', 'alertes.etablissement_id', '=', 'etablissements.id')
             ->select('alertes.*', 'etablissements.nom as etab_nom')
             ->where('alertes.lu', 0);
-        if ($reseauId) {
+        if ($reseauId !== null) {
             $alertesReseauQ->where('etablissements.reseau_id', $reseauId);
         }
         $alertesReseau = $alertesReseauQ

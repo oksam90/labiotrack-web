@@ -11,7 +11,9 @@
         @if(in_array(Auth::user()->role, ['qhse','admin_reseau','superadmin','prestataire']))
         <a href="{{ route('rapports.index') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-pdf me-1"></i>{{ __('dashboard.btn_report') }}</a>
         @endif
+        @can('create', \App\Models\Declaration::class)
         <a href="{{ route('declarations.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus me-1"></i>{{ __('dashboard.btn_declare') }}</a>
+        @endcan
     </div>
 </div>
 

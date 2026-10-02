@@ -86,10 +86,8 @@ class StockageController extends Controller
 
         $user = Auth::user();
 
-        $declarations    = DB::table('declarations')
-            ->whereIn('id', $request->declaration_ids)->get();
-        $totalContenants = $declarations->sum('nombre_contenants');
-        $totalPoids      = $declarations->sum('poids_estime_kg');
+        // Rôles ayant accès au module Production (cf. menu latéral).
+        abort_unless(in_array($user->role, ['superadmin', 'admin_reseau', 'qhse', 'agent', 'prestataire'], true), 403);
 
         $service = DB::table('services')->find($request->service_id);
         $etabId  = $user->isMultiEtablissement()
@@ -98,6 +96,24 @@ class StockageController extends Controller
         // DB::table() contourne les scopes : on vérifie le périmètre explicitement.
         abort_unless($etabId && $user->canAccessTenant((int) $etabId)
             && (int) $service->etablissement_id === (int) $etabId, 403);
+
+        // SECURITY : uniquement des déclarations du MÊME établissement que le
+        // transfert, encore en stock. Sinon on pouvait rattacher (et totaliser)
+        // les déclarations d'une autre structure.
+        $declarationIds = array_unique(array_map('intval', $request->declaration_ids));
+        $declarations   = DB::table('declarations')
+            ->whereIn('id', $declarationIds)
+            ->where('etablissement_id', $etabId)
+            ->where('statut', 'en_stock')
+            ->get();
+
+        if ($declarations->count() !== count($declarationIds)) {
+            return back()->withInput()
+                ->withErrors(['declaration_ids' => __('stockage.errors_declarations_out_of_scope')]);
+        }
+
+        $totalContenants = $declarations->sum('nombre_contenants');
+        $totalPoids      = $declarations->sum('poids_estime_kg');
 
         $transfertId = DB::table('transferts')->insertGetId([
             'etablissement_id'     => $etabId,
@@ -114,7 +130,7 @@ class StockageController extends Controller
             'updated_at'           => now(),
         ]);
 
-        foreach ($request->declaration_ids as $decId) {
+        foreach ($declarationIds as $decId) {
             DB::table('transfert_declarations')->insert([
                 'transfert_id'   => $transfertId,
                 'declaration_id' => $decId,

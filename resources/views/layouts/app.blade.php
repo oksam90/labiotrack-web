@@ -68,9 +68,11 @@
         <a href="{{ route('declarations.index') }}" class="sidebar-link {{ request()->is('declarations*') ? 'active' : '' }}">
             <i class="bi bi-clipboard-plus"></i> {{ __('nav.declarations') }}
         </a>
+        @can('create', \App\Models\Declaration::class)
         <a href="{{ route('declarations.create') }}" class="sidebar-link">
             <i class="bi bi-plus-circle"></i> {{ __('nav.new_declaration') }}
         </a>
+        @endcan
         <a href="{{ route('stockage.index') }}" class="sidebar-link {{ request()->is('stockage*') ? 'active' : '' }}">
             <i class="bi bi-archive"></i> {{ __('nav.storage') }}
         </a>

@@ -33,6 +33,18 @@ class EnsureTenantMiddleware
 
         $user = Auth::user();
 
+        // SECURITY : un compte désactivé ou anonymisé APRÈS sa connexion perd
+        // immédiatement l'accès (session en cours ou cookie « se souvenir de
+        // moi »). Le contrôle de AuthController::login ne joue qu'à la connexion.
+        if (! $user->actif || $user->anonymized_at) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->withErrors(['email' => __('auth_ui.account_disabled')]);
+        }
+
         // Switch tenant via paramètre URL (utilisateurs autorisés)
         if ($request->has('switch_tenant') && (int) $request->switch_tenant > 0) {
             $tid = (int) $request->switch_tenant;

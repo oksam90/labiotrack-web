@@ -175,6 +175,16 @@ const typeLabels = {
     destruction: META.typeDestr,
 };
 
+// SECURITY (XSS) : tout texte issu de la base (description, acteur,
+// établissement — dont des saisies utilisateur comme la zone de stockage)
+// est échappé avant insertion via innerHTML.
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+}
+const NIVEAUX = ['info', 'success', 'warning', 'danger', 'secondary'];
+
 function formatDate(d) {
     const dt = new Date(d);
     return dt.toLocaleDateString(META.locale) + ' ' + dt.toLocaleTimeString(META.locale, {hour:'2-digit',minute:'2-digit'});
@@ -212,7 +222,8 @@ async function chargerActivites() {
 
         container.innerHTML = data.flux.map(item => {
             const cfg = icons[item.type] || icons.declaration;
-            return `<div class="flux-item ${item.niveau}">
+            const niveau = NIVEAUX.includes(item.niveau) ? item.niveau : 'info';
+            return `<div class="flux-item ${niveau}">
                 <div class="d-flex align-items-start gap-2">
                     <div class="type-icon" style="background:${cfg.bg};">
                         <i class="bi ${cfg.icon}" style="color:${cfg.color};"></i>
@@ -220,14 +231,14 @@ async function chargerActivites() {
                     <div class="flex-fill">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="fw-semibold" style="font-size:.88rem;">${item.description}</span>
+                                <span class="fw-semibold" style="font-size:.88rem;">${esc(item.description)}</span>
                                 <div style="font-size:.78rem;color:#6b7280;margin-top:.1rem;">
-                                    <i class="bi bi-person me-1"></i>${item.acteur}
+                                    <i class="bi bi-person me-1"></i>${esc(item.acteur)}
                                     <span class="mx-2">·</span>
-                                    <i class="bi bi-hospital me-1"></i>${item.etablissement}
+                                    <i class="bi bi-hospital me-1"></i>${esc(item.etablissement)}
                                 </div>
                             </div>
-                            <small class="text-muted text-nowrap ms-2" style="font-size:.75rem;">${timeAgo(item.moment)}</small>
+                            <small class="text-muted text-nowrap ms-2" style="font-size:.75rem;">${esc(timeAgo(item.moment))}</small>
                         </div>
                     </div>
                 </div>

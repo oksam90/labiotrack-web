@@ -195,9 +195,12 @@ class User extends Authenticatable implements CanResetPasswordContract
     /**
      * Applique un filtre sur une query DB::table() en respectant le
      * périmètre du rôle.
-     *  - superadmin / collecteur / prestataire → aucun filtre (vue globale)
-     *  - admin_reseau → filtré par les établissements de leur réseau
-     *  - qhse / agent → filtré par leur établissement
+     *  - superadmin                              → aucun filtre (vue globale)
+     *  - admin_reseau / collecteur / prestataire → établissements de leur réseau
+     *  - qhse / agent / client_signataire        → leur établissement
+     *
+     * Fail-closed : un rôle réseau sans réseau, ou un rôle local sans
+     * établissement, ne voit RIEN (auparavant : filtre « IS NULL »).
      *
      * @param \Illuminate\Database\Query\Builder $query
      * @param string $col Colonne établissement à filtrer
@@ -206,7 +209,9 @@ class User extends Authenticatable implements CanResetPasswordContract
     {
         if ($this->isGlobal()) return $query;
 
-        if ($this->isReseauScoped() && $this->reseau_id) {
+        if ($this->isReseauScoped()) {
+            if (! $this->reseau_id) return $query->whereRaw('1 = 0');
+
             return $query->whereIn($col, function ($q) {
                 $q->select('id')
                   ->from('etablissements')
@@ -214,6 +219,31 @@ class User extends Authenticatable implements CanResetPasswordContract
             });
         }
 
+        if (! $this->etablissement_id) return $query->whereRaw('1 = 0');
+
         return $query->where($col, $this->etablissement_id);
+    }
+
+    /**
+     * Restreint une query sur `users` aux comptes du périmètre :
+     * superadmin → tous ; rôle réseau → comptes rattachés à son réseau
+     * (directement ou via leur établissement) ; sinon → son établissement.
+     */
+    public function filtreUtilisateurs($query, string $table = 'users')
+    {
+        if ($this->isGlobal()) return $query;
+
+        if ($this->isReseauScoped()) {
+            if (! $this->reseau_id) return $query->whereRaw('1 = 0');
+
+            return $query->where(function ($q) use ($table) {
+                $q->where("$table.reseau_id", $this->reseau_id)
+                  ->orWhereIn("$table.etablissement_id", function ($sub) {
+                      $sub->select('id')->from('etablissements')->where('reseau_id', $this->reseau_id);
+                  });
+            });
+        }
+
+        return $query->where("$table.etablissement_id", $this->etablissement_id ?? 0);
     }
 }

@@ -10,7 +10,9 @@ class StoreDeclarationRequest extends FormRequest
     {
         // L'accès est déjà cadré par les middlewares auth + tenant ; tout
         // utilisateur authentifié rattaché à un établissement peut déclarer.
-        return $this->user() !== null;
+        // DeclarationPolicy::create : collecteur, prestataire et client
+        // signataire ne déclarent pas (la policy existait mais n'était appelée nulle part).
+        return $this->user()?->can('create', \App\Models\Declaration::class) ?? false;
     }
 
     public function rules(): array
