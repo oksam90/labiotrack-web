@@ -26,3 +26,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 *.sql
+
+# Réglages Claude Code propres à chaque poste (permissions, chemins locaux) : jamais versionnés
+/.claude/settings.local.json
