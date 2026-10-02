@@ -30,7 +30,7 @@ class StockageController extends Controller
         $transferts  = $query->paginate(10);
 
         $srvQuery = DB::table('services')->where('actif', 1);
-        if (!$user->isGlobal()) $srvQuery->where('etablissement_id', $user->etablissement_id);
+        $user->filtreEtab($srvQuery); // périmètre : étab (local) ou réseau (admin_reseau)
         $services = $srvQuery->get();
 
         $enStockQ = DB::table('declarations')->where('statut', 'en_stock');
@@ -67,7 +67,7 @@ class StockageController extends Controller
         $declarations = $declarations->paginate(10, ['*'], 'declarations_page');
 
         $srvQuery = DB::table('services')->where('actif', 1);
-        if (!$user->isGlobal()) $srvQuery->where('etablissement_id', $user->etablissement_id);
+        $user->filtreEtab($srvQuery); // périmètre : étab (local) ou réseau (admin_reseau)
         $services = $srvQuery->paginate(10, ['*'], 'services_page');
 
         return view('stockage.create', compact('declarations', 'services'));
@@ -92,9 +92,12 @@ class StockageController extends Controller
         $totalPoids      = $declarations->sum('poids_estime_kg');
 
         $service = DB::table('services')->find($request->service_id);
-        $etabId  = $user->isGlobal()
-            ? ($service->etablissement_id ?? $user->etablissement_id)
+        $etabId  = $user->isMultiEtablissement()
+            ? $service->etablissement_id
             : $user->etablissement_id;
+        // DB::table() contourne les scopes : on vérifie le périmètre explicitement.
+        abort_unless($etabId && $user->canAccessTenant((int) $etabId)
+            && (int) $service->etablissement_id === (int) $etabId, 403);
 
         $transfertId = DB::table('transferts')->insertGetId([
             'etablissement_id'     => $etabId,

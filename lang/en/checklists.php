@@ -67,4 +67,5 @@ return [
     'show_service_general' => 'General',
     'flash_created' => 'Checklist saved — Score: :score%',
     'errors_access_denied' => 'Access denied. Only QHSE managers and administrators can create checklists.',
+    'errors_etab_required' => 'Select a department, or a facility from the network dashboard, before saving the checklist.',
 ];

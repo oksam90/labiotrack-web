@@ -13,7 +13,7 @@
 @endif
 
 {{-- Switch tenant --}}
-@if(in_array(Auth::user()->role, ['superadmin','admin']))
+@if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau']))
 <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
     <span class="text-muted fw-semibold" style="font-size:.85rem;"><i class="bi bi-buildings me-1"></i>{{ __('superadmin.switch_to') }}</span>
     @foreach($etablissements as $etab)

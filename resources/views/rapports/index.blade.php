@@ -65,13 +65,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    {{-- Sélecteur structure pour les utilisateurs globaux --}}
-                    @if(Auth::user()->isGlobal() && ! ($currentTenant))
+                    {{-- Sélecteur structure pour les utilisateurs multi-établissements (superadmin, admin réseau) --}}
+                    @if(Auth::user()->isMultiEtablissement() && ! ($currentTenant))
                     <div class="mb-3">
                         <label class="form-label fw-semibold">{{ __('rapports.modal_structure') }} <span class="text-danger">*</span></label>
                         <select name="etablissement_id" class="form-select" required>
                             <option value="">{{ __('rapports.modal_structure_ph') }}</option>
-                            @foreach(DB::table('etablissements')->where('actif',1)->orderBy('nom')->get() as $etab)
+                            @foreach(\App\Models\Etablissement::actif()->orderBy('nom')->get() as $etab) {{-- TenantScope : réseau de l'admin réseau --}}
                                 <option value="{{ $etab->id }}" {{ (old('etablissement_id') == $etab->id) ? 'selected' : '' }}>
                                     {{ $etab->nom }}
                                 </option>

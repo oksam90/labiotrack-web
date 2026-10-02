@@ -67,4 +67,5 @@ return [
     'show_service_general' => 'Général',
     'flash_created' => 'Checklist enregistrée — Score : :score%',
     'errors_access_denied' => 'Accès refusé. Seuls les responsables QHSE et administrateurs peuvent créer des checklists.',
+    'errors_etab_required' => 'Sélectionnez un service, ou une structure via le tableau de bord réseau, avant d’enregistrer la checklist.',
 ];

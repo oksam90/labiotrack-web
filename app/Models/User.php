@@ -87,6 +87,17 @@ class User extends Authenticatable implements CanResetPasswordContract
     }
 
     /**
+     * Opère sur PLUSIEURS établissements (superadmin, admin_reseau) : n'a pas
+     * d'établissement implicite. Pour une saisie (déclaration, checklist,
+     * transfert, rapport), l'établissement cible est déduit du service choisi
+     * ou de la structure sélectionnée, puis vérifié par canAccessTenant().
+     */
+    public function isMultiEtablissement(): bool
+    {
+        return $this->isGlobal() || $this->isAdminReseau();
+    }
+
+    /**
      * Peut accéder aux sections d'administration (admin local, admin réseau,
      * superadmin).
      */

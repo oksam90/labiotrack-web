@@ -63,7 +63,7 @@
         </a>
         @endunless
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','agent','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','prestataire']))
         <div class="sidebar-section mt-2">{{ __('nav.section_production') }}</div>
         <a href="{{ route('declarations.index') }}" class="sidebar-link {{ request()->is('declarations*') ? 'active' : '' }}">
             <i class="bi bi-clipboard-plus"></i> {{ __('nav.declarations') }}
@@ -78,7 +78,7 @@
 
         @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','agent','collecteur','prestataire','client_signataire']))
         <div class="sidebar-section mt-2">{{ __('nav.section_transport') }}</div>
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','collecteur','prestataire','client_signataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','collecteur','prestataire','client_signataire']))
         <a href="{{ route('collectes.index') }}" class="sidebar-link {{ request()->is('collectes*') && ! request()->is('collectes/*/signature') ? 'active' : '' }}">
             <i class="bi bi-truck"></i> {{ __('nav.collectes') }}
         </a>
@@ -88,14 +88,14 @@
         </a>
         @endif
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','prestataire']))
         <div class="sidebar-section mt-2">{{ __('nav.section_destruction') }}</div>
         <a href="{{ route('destructions.index') }}" class="sidebar-link {{ request()->is('destructions*') ? 'active' : '' }}">
             <i class="bi bi-fire"></i> {{ __('nav.destructions') }}
         </a>
         @endif
 
-        @if(in_array(Auth::user()->role, ['superadmin','admin','qhse','prestataire']))
+        @if(in_array(Auth::user()->role, ['superadmin','admin','admin_reseau','qhse','prestataire']))
         <div class="sidebar-section mt-2">{{ __('nav.section_compliance') }}</div>
         <a href="{{ route('checklists.index') }}" class="sidebar-link {{ request()->is('checklists*') ? 'active' : '' }}">
             <i class="bi bi-check2-square"></i> {{ __('nav.checklists') }}

@@ -38,7 +38,7 @@ class RapportController extends Controller
         $tenant = app()->bound('currentTenant') ? app('currentTenant') : null;
 
         // Résolution de l'établissement cible
-        if ($user->isGlobal()) {
+        if ($user->isMultiEtablissement()) {
             // Priorité : 1. tenant sélectionné en session, 2. champ formulaire, 3. erreur
             $etabId = $tenant?->id ?? ($request->etablissement_id ?: null);
             if (! $etabId) {
@@ -49,6 +49,11 @@ class RapportController extends Controller
             }
         } else {
             $etabId = $user->etablissement_id;
+        }
+
+        // SECURITY : un admin_reseau ne génère que pour une structure de son réseau.
+        if ($etabId) {
+            abort_unless($user->canAccessTenant((int) $etabId), 403);
         }
 
         $etablissement = DB::table('etablissements')->find($etabId);

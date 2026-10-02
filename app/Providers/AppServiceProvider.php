@@ -87,7 +87,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::define('access-qhse', fn($user) =>
-            in_array($user->role, ['admin','superadmin','qhse','prestataire'])
+            in_array($user->role, ['admin','admin_reseau','superadmin','qhse','prestataire'])
         );
 
         Gate::define('manage-users', fn($user) =>

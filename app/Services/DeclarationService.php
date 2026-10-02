@@ -30,10 +30,12 @@ class DeclarationService
     {
         [$lignesData, $totalNombre, $totalPoids] = $this->buildLignes($lignes);
 
-        // Établissement : celui du 1er service pour un rôle global, sinon celui
-        // de l'utilisateur (qhse/agent). Les lignes ont déjà été normalisées.
+        // Établissement : celui du 1er service pour un rôle multi-établissements
+        // (superadmin, admin_reseau), sinon celui de l'utilisateur (qhse/agent).
+        // Service::findOrFail passe par TenantScope (périmètre de l'utilisateur).
         $premierService = Service::findOrFail($lignesData[0]['service_id']);
-        $etabId = $user->isGlobal() ? $premierService->etablissement_id : $user->etablissement_id;
+        $etabId = $user->isMultiEtablissement() ? $premierService->etablissement_id : $user->etablissement_id;
+        abort_unless($etabId && $user->canAccessTenant((int) $etabId), 403);
 
         $decl = DB::transaction(function () use ($etabId, $user, $totalNombre, $totalPoids, $notes, $photoPath, $lignesData) {
             $decl = Declaration::withoutGlobalScope(TenantScope::class)->create([

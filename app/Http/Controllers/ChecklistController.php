@@ -36,7 +36,7 @@ class ChecklistController extends Controller
         $user = Auth::user();
         // Seuls les rôles habilités peuvent créer une checklist
         // Le prestataire n'est pas responsable des checklists internes (aligné avec ChecklistPolicy)
-        if (! in_array($user->role, ['superadmin','admin','qhse'])) {
+        if (! in_array($user->role, ['superadmin','admin','admin_reseau','qhse'])) {
             abort(403, __('checklists.errors_access_denied'));
         }
 
@@ -47,9 +47,16 @@ class ChecklistController extends Controller
         $scoreConformite = round(($score / count($items)) * 100, 2);
 
         $service = $request->service_id ? Service::findOrFail($request->service_id) : null;
-        $etabId  = $user->isGlobal()
-            ? ($service?->etablissement_id ?? null)
+        // Multi-établissements (superadmin, admin_reseau) : établissement du
+        // service choisi, à défaut la structure sélectionnée (zoom).
+        $etabId  = $user->isMultiEtablissement()
+            ? ($service?->etablissement_id ?? (app()->bound('currentTenant') ? app('currentTenant')?->id : null))
             : $user->etablissement_id;
+
+        if (! $etabId) {
+            return back()->withInput()->with('error', __('checklists.errors_etab_required'));
+        }
+        abort_unless($user->canAccessTenant((int) $etabId), 403, __('checklists.errors_access_denied'));
 
         Checklist::withoutGlobalScope(TenantScope::class)->create([
             'etablissement_id'            => $etabId,
