@@ -99,4 +99,5 @@ return [
     'flash_qr_generated'   => 'QR Code généré.',
     'errors_edit_collected' => 'Impossible de modifier une déclaration déjà collectée.',
     'errors_delete_processed' => 'Impossible de supprimer une déclaration déjà traitée.',
+    'error_services_other_etab' => 'Toutes les lignes doivent concerner des services du même établissement.',
 ];

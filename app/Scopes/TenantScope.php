@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Auth;
  *
  * Vue RÉSEAU (filtré par reseau_id) :
  *   - admin_reseau   → son réseau uniquement
- *   - admin          → son réseau uniquement (admin local promu à la maille réseau)
  *
  * Vue ÉTABLISSEMENT :
  *   - qhse, agent, client_signataire → limités à leur établissement
@@ -49,7 +48,7 @@ class TenantScope implements Scope
         // Vue globale → pas de filtre
         if ($user->isGlobal()) return;
 
-        // Vue réseau (admin, admin_reseau, collecteur, prestataire)
+        // Vue réseau (admin_reseau, collecteur, prestataire)
         if ($user->isReseauScoped()) {
             // SECURITY (fail-closed) : un rôle réseau sans reseau_id ne
             // voit RIEN plutôt que TOUT.

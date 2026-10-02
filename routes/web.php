@@ -140,8 +140,8 @@ Route::middleware(['auth', 'tenant'])->group(function () {
         Route::get('/{id}/pdf',           [RapportController::class, 'pdf'])->name('pdf');
     });
 
-    // ── ADMINISTRATION STRUCTURE (admin local + admin réseau) ────────────
-    Route::prefix('admin')->name('admin.')->middleware('role:admin,admin_reseau,superadmin')->group(function () {
+    // ── ADMINISTRATION STRUCTURE (admin réseau + superadmin) ────────────
+    Route::prefix('admin')->name('admin.')->middleware('role:admin_reseau,superadmin')->group(function () {
         
         Route::get('/activites',       [AdminController::class, 'activites'])->name('activites');
         Route::get('/activites/data',  [AdminController::class, 'activitesData'])->name('activites.data');
@@ -177,7 +177,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     });
 
     // ── SUPERADMIN — Vue réseau global ──────────────────────────────────────
-    Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin,admin,admin_reseau,collecteur,prestataire')->group(function () {
+    Route::prefix('superadmin')->name('superadmin.')->middleware('role:superadmin,admin_reseau,collecteur,prestataire')->group(function () {
         Route::get('/',                       [SuperAdminController::class, 'index'])->name('index');
         Route::get('/etablissements',         [SuperAdminController::class, 'etablissements'])->name('etablissements');
         Route::get('/etablissements/{id}',    [SuperAdminController::class, 'etablissement'])->name('etablissement');

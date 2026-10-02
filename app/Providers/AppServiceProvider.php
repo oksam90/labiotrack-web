@@ -49,6 +49,14 @@ class AppServiceProvider extends ServiceProvider
         // ── Forcer HTTPS derrière le reverse proxy (production)
         if (config('app.env') === 'production') {
             \Illuminate\Support\Facades\URL::forceScheme('https');
+
+            // SECURITY (L2) : jamais de page de debug en production (elle
+            // expose traces, requêtes SQL et variables d'environnement), même
+            // si APP_DEBUG=true est resté dans le .env par erreur.
+            if (config('app.debug')) {
+                config(['app.debug' => false]);
+                \Illuminate\Support\Facades\Log::critical('APP_DEBUG=true ignoré en production : corrigez le .env.');
+            }
         }
 
         // ── Pagination Bootstrap 5 (le layout utilise Bootstrap, pas Tailwind)
@@ -87,7 +95,7 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Gate::define('access-qhse', fn($user) =>
-            in_array($user->role, ['admin','superadmin','qhse','prestataire'])
+            in_array($user->role, ['admin_reseau','superadmin','qhse','prestataire'])
         );
 
         Gate::define('manage-users', fn($user) =>

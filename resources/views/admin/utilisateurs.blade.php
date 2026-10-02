@@ -25,10 +25,13 @@
 <td><small>{{ $u->etablissement_nom ?? '—' }}</small></td>
 <td>@if($u->actif)<span class="badge bg-success">{{ __('admin.status_active') }}</span>@else<span class="badge bg-secondary">{{ __('admin.status_inactive') }}</span>@endif</td>
 <td class="d-flex gap-1">
+@php $peutGerer = auth()->user()->canManageUser($u); $estMoi = $u->id === auth()->id(); @endphp
+@if($peutGerer)
 <a href="{{ route('admin.utilisateurs.edit', $u->id) }}" class="btn btn-sm btn-outline-secondary py-0" title="{{ __('admin.btn_modify') }}"><i class="bi bi-pencil"></i></a>
+@endif
+@if($peutGerer && ! $estMoi)
 <form method="POST" action="{{ route('admin.utilisateurs.toggle', $u->id) }}" class="d-inline">@csrf
 <button type="submit" class="btn btn-sm {{ $u->actif ? 'btn-outline-warning' : 'btn-outline-success' }} py-0" title="{{ $u->actif ? __('admin.btn_deactivate') : __('admin.btn_activate') }}"><i class="bi {{ $u->actif ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i></button></form>
-@if($u->id !== auth()->id())
 <form method="POST" action="{{ route('admin.utilisateurs.destroy', $u->id) }}" class="d-inline" onsubmit="return confirm('{{ __('admin.confirm_delete_user') }}')">@csrf @method('DELETE')
 <button type="submit" class="btn btn-sm btn-outline-danger py-0" title="{{ __('admin.btn_delete') }}"><i class="bi bi-trash"></i></button></form>
 @endif

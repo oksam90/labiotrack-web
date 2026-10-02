@@ -10,7 +10,6 @@ use App\Models\User;
  *
  * superadmin    → CRUD complet sur tous les établissements / réseaux
  * admin_reseau  → CRUD sur les établissements de SON réseau (sauf delete)
- * admin         → modifie son propre établissement
  */
 class EtablissementPolicy
 {
@@ -31,10 +30,7 @@ class EtablissementPolicy
     public function update(User $user, Etablissement $e): bool
     {
         if ($user->isSuperAdmin()) return true;
-        if ($user->isAdminReseau()) {
-            return $user->reseau_id === $e->reseau_id;
-        }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return $this->dansSonReseau($user, $e);
     }
 
     /**
@@ -48,18 +44,23 @@ class EtablissementPolicy
     public function manageUsers(User $user, Etablissement $e): bool
     {
         if ($user->isSuperAdmin()) return true;
-        if ($user->isAdminReseau()) {
-            return $user->reseau_id === $e->reseau_id;
-        }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return $this->dansSonReseau($user, $e);
     }
 
     public function manageServices(User $user, Etablissement $e): bool
     {
         if ($user->isSuperAdmin()) return true;
-        if ($user->isAdminReseau()) {
-            return $user->reseau_id === $e->reseau_id;
-        }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return $this->dansSonReseau($user, $e);
+    }
+
+    /**
+     * Admin réseau : l'établissement appartient à SON réseau. Fail-closed si
+     * l'un des deux n'a pas de réseau (null === null ne doit pas autoriser).
+     */
+    private function dansSonReseau(User $user, Etablissement $e): bool
+    {
+        return $user->isAdminReseau()
+            && $user->reseau_id
+            && (int) $user->reseau_id === (int) $e->reseau_id;
     }
 }

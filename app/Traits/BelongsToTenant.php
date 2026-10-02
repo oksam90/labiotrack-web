@@ -24,7 +24,7 @@ trait BelongsToTenant
             if (! $model->etablissement_id && auth()->check()) {
                 $user = auth()->user();
                 // Auto-fill UNIQUEMENT pour les rôles strictement locaux
-                // (qhse, agent, client_signataire). Les admin/admin_reseau/
+                // (qhse, agent, client_signataire). Les admin_reseau/
                 // superadmin et collecteur/prestataire fournissent explicitement
                 // la cible.
                 if (in_array($user->role, ['qhse', 'agent', 'client_signataire'], true)

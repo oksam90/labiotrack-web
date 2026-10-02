@@ -15,7 +15,7 @@ use App\Models\Etablissement;
  * Logique par rôle :
  *  - superadmin              → vue globale par défaut, peut zoomer sur n'importe
  *                              quel établissement via session admin_tenant_id
- *  - admin_reseau / admin    → vue limitée à leur réseau, peuvent zoomer sur
+ *  - admin_reseau            → vue limitée à leur réseau, peuvent zoomer sur
  *                              un établissement de LEUR réseau (vérification reseau_id)
  *  - collecteur / prestataire → vue globale, peuvent zoomer sur tout établissement
  *  - qhse / agent            → tenant fixe = leur établissement
@@ -33,18 +33,22 @@ class EnsureTenantMiddleware
 
         $user = Auth::user();
 
-        // Switch tenant via paramètre URL (utilisateurs autorisés)
-        if ($request->has('switch_tenant') && (int) $request->switch_tenant > 0) {
-            $tid = (int) $request->switch_tenant;
+        // SECURITY : un compte désactivé ou anonymisé APRÈS sa connexion perd
+        // immédiatement l'accès (session en cours ou cookie « se souvenir de
+        // moi »). Le contrôle de AuthController::login ne joue qu'à la connexion.
+        if (! $user->actif || $user->anonymized_at) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
 
-            // SECURITY : vérifier que l'utilisateur peut accéder à cet établissement
-            if ($user->canAccessTenant($tid)) {
-                $request->session()->put('admin_tenant_id', $tid);
-                return redirect($request->url())
-                    ->with('success', __('common.tenant_view_switched'));
-            }
-            abort(403, __('common.tenant_access_denied'));
+            return redirect()->route('login')
+                ->withErrors(['email' => __('auth_ui.account_disabled')]);
         }
+
+        // NB (L1) : l'ancien changement de structure par paramètre GET
+        // (?switch_tenant=) a été retiré — changement d'état via GET, donc
+        // déclenchable par un simple lien. Seule la route POST (protégée CSRF)
+        // superadmin.switch-tenant subsiste.
 
         // Détermination du tenant courant
         if ($user->isGlobal() || $user->isReseauScoped()) {

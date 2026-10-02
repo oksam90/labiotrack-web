@@ -114,4 +114,6 @@ return [
     // Flash messages
     'created_success'    => 'Destruction recorded — Certificate no. :ref',
     'flash_created'      => 'Destruction recorded. Certificate no. :ref generated.',
+    'errors_already_destroyed' => "This collection has already been destroyed: here is its certificate.",
+    'errors_collecte_cancelled' => "This collection was cancelled: no destruction can be recorded.",
 ];

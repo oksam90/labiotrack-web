@@ -30,7 +30,7 @@ class StockageController extends Controller
         $transferts  = $query->paginate(10);
 
         $srvQuery = DB::table('services')->where('actif', 1);
-        if (!$user->isGlobal()) $srvQuery->where('etablissement_id', $user->etablissement_id);
+        $user->filtreEtab($srvQuery); // périmètre : étab (local) ou réseau (admin_reseau)
         $services = $srvQuery->get();
 
         $enStockQ = DB::table('declarations')->where('statut', 'en_stock');
@@ -67,7 +67,7 @@ class StockageController extends Controller
         $declarations = $declarations->paginate(10, ['*'], 'declarations_page');
 
         $srvQuery = DB::table('services')->where('actif', 1);
-        if (!$user->isGlobal()) $srvQuery->where('etablissement_id', $user->etablissement_id);
+        $user->filtreEtab($srvQuery); // périmètre : étab (local) ou réseau (admin_reseau)
         $services = $srvQuery->paginate(10, ['*'], 'services_page');
 
         return view('stockage.create', compact('declarations', 'services'));
@@ -86,15 +86,34 @@ class StockageController extends Controller
 
         $user = Auth::user();
 
-        $declarations    = DB::table('declarations')
-            ->whereIn('id', $request->declaration_ids)->get();
-        $totalContenants = $declarations->sum('nombre_contenants');
-        $totalPoids      = $declarations->sum('poids_estime_kg');
+        // Rôles ayant accès au module Production (cf. menu latéral).
+        abort_unless(in_array($user->role, ['superadmin', 'admin_reseau', 'qhse', 'agent', 'prestataire'], true), 403);
 
         $service = DB::table('services')->find($request->service_id);
-        $etabId  = $user->isGlobal()
-            ? ($service->etablissement_id ?? $user->etablissement_id)
+        $etabId  = $user->isMultiEtablissement()
+            ? $service->etablissement_id
             : $user->etablissement_id;
+        // DB::table() contourne les scopes : on vérifie le périmètre explicitement.
+        abort_unless($etabId && $user->canAccessTenant((int) $etabId)
+            && (int) $service->etablissement_id === (int) $etabId, 403);
+
+        // SECURITY : uniquement des déclarations du MÊME établissement que le
+        // transfert, encore en stock. Sinon on pouvait rattacher (et totaliser)
+        // les déclarations d'une autre structure.
+        $declarationIds = array_unique(array_map('intval', $request->declaration_ids));
+        $declarations   = DB::table('declarations')
+            ->whereIn('id', $declarationIds)
+            ->where('etablissement_id', $etabId)
+            ->where('statut', 'en_stock')
+            ->get();
+
+        if ($declarations->count() !== count($declarationIds)) {
+            return back()->withInput()
+                ->withErrors(['declaration_ids' => __('stockage.errors_declarations_out_of_scope')]);
+        }
+
+        $totalContenants = $declarations->sum('nombre_contenants');
+        $totalPoids      = $declarations->sum('poids_estime_kg');
 
         $transfertId = DB::table('transferts')->insertGetId([
             'etablissement_id'     => $etabId,
@@ -111,7 +130,7 @@ class StockageController extends Controller
             'updated_at'           => now(),
         ]);
 
-        foreach ($request->declaration_ids as $decId) {
+        foreach ($declarationIds as $decId) {
             DB::table('transfert_declarations')->insert([
                 'transfert_id'   => $transfertId,
                 'declaration_id' => $decId,

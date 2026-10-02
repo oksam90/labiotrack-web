@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Services\CacheService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -36,7 +38,7 @@ class RapportController extends Controller
         $tenant = app()->bound('currentTenant') ? app('currentTenant') : null;
 
         // Résolution de l'établissement cible
-        if ($user->isGlobal()) {
+        if ($user->isMultiEtablissement()) {
             // Priorité : 1. tenant sélectionné en session, 2. champ formulaire, 3. erreur
             $etabId = $tenant?->id ?? ($request->etablissement_id ?: null);
             if (! $etabId) {
@@ -47,6 +49,11 @@ class RapportController extends Controller
             }
         } else {
             $etabId = $user->etablissement_id;
+        }
+
+        // SECURITY : un admin_reseau ne génère que pour une structure de son réseau.
+        if ($etabId) {
+            abort_unless($user->canAccessTenant((int) $etabId), 403);
         }
 
         $etablissement = DB::table('etablissements')->find($etabId);
@@ -62,13 +69,11 @@ class RapportController extends Controller
 
         $pdf = Pdf::loadView('rapports.rapport_pdf', compact('data', 'etablissement', 'request'));
 
-        $dossier = storage_path('app/public/rapports');
-        if (! is_dir($dossier)) {
-            mkdir($dossier, 0755, true);
-        }
-
-        $path = 'rapports/rapport_' . now()->format('Ymd_His') . '.pdf';
-        $pdf->save(storage_path('app/public/' . $path));
+        // SECURITY : disque PRIVÉ + nom unique. L'ancien nom horodaté à la
+        // seconde était devinable et pouvait être écrasé par le rapport d'une
+        // autre structure généré au même instant.
+        $path = 'rapports/' . $etabId . '/' . now()->format('Ymd_His') . '_' . Str::uuid() . '.pdf';
+        Storage::disk('local')->put($path, $pdf->output());
 
         $rapportId = DB::table('rapports')->insertGetId([
             'etablissement_id' => $etabId,
@@ -93,32 +98,30 @@ class RapportController extends Controller
         $user->filtreEtab($query);
         $rapport = $query->firstOrFail();
 
-        $fichier = storage_path('app/public/' . $rapport->fichier_path);
-        if (! file_exists($fichier)) {
+        if (! $rapport->fichier_path || ! Storage::disk('local')->exists($rapport->fichier_path)) {
             abort(404, __('rapports.errors_file_missing'));
         }
 
-        return response()->file($fichier);
+        return response()->file(Storage::disk('local')->path($rapport->fichier_path));
     }
 
     public function analyseFinanciere()
     {
         $user    = Auth::user();
         $mois    = Carbon::now()->format('Y-m');
-        $etabId  = $user->isGlobal() ? null : $user->etablissement_id;
 
+        // SECURITY (H4) : clé de cache propre au PÉRIMÈTRE (global / réseau /
+        // établissement). Avant, prestataire et admin réseau sans établissement
+        // partageaient la clé « global » du superadmin (fuite entre réseaux).
         $cached = Cache::remember(
-            CacheService::financierKey($etabId, $mois),
+            CacheService::financierKey(CacheService::perimetre($user), $mois),
             CacheService::TTL_FINANCIER,
             function () use ($user, $mois) {
 
                 // Le détail (service × contenant × nombre) vit dans
                 // declaration_lignes. On joint l'en-tête `declarations` pour le
                 // filtre mois (date_declaration) + périmètre établissement.
-                $etabFilter = function ($q) use ($user) {
-                    if ($user->isGlobal()) return $q;
-                    return $q->where('declarations.etablissement_id', $user->etablissement_id);
-                };
+                $etabFilter = fn ($q) => $user->filtreEtab($q, 'declarations.etablissement_id');
 
                 $coutParContenant = $etabFilter(
                     DB::table('declaration_lignes')
@@ -129,7 +132,7 @@ class RapportController extends Controller
                             SUM(declaration_lignes.nombre_contenants * type_contenants.cout_unitaire) as cout_total')
                         ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('type_contenants.id', 'type_contenants.nom', 'type_contenants.cout_unitaire')
-                )->paginate(10, ['*'], 'contenants_page');
+                )->get(); // liste complète : la vue n'affiche pas de pagination et totalise
 
                 $coutSacs = $etabFilter(
                     DB::table('declaration_lignes')
@@ -161,7 +164,7 @@ class RapportController extends Controller
                         ->whereRaw("DATE_FORMAT(declarations.date_declaration,'%Y-%m') = ?", [$mois])
                         ->groupBy('services.id', 'services.nom')
                         ->orderByDesc('cout_total')
-                )->paginate(10, ['*'], 'services_page');
+                )->get();
 
                 return compact(
                     'coutParContenant', 'sacJaune', 'sacNoir',

@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Génère le bordereau PDF (non signé) d'une collecte de façon asynchrone,
- * le stocke sur le disque public et renseigne collectes.bordereau_pdf_path /
+ * le stocke sur le disque PRIVÉ (servi uniquement via
+ * CollecteController::downloadBordereau, après contrôle de périmètre) et renseigne collectes.bordereau_pdf_path /
  * bordereau_generated_at. Remplace la génération synchrone bloquante.
  *
  * NOTE : avec QUEUE_CONNECTION=sync (défaut local), s'exécute inline. En prod,
@@ -64,7 +65,7 @@ class GenerateCollecteBordereauPdf implements ShouldQueue
         $pdf  = Pdf::loadView('collectes.bordereau_pdf', compact('collecte', 'declarations', 'etablissement'));
         $path = sprintf('bordereaux/%d/bordereau_%s.pdf', $collecte->etablissement_id, $collecte->numero_bordereau);
 
-        Storage::disk('public')->put($path, $pdf->output());
+        Storage::disk('local')->put($path, $pdf->output());
 
         DB::table('collectes')->where('id', $collecte->id)->update([
             'bordereau_pdf_path'     => $path,

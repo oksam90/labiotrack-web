@@ -99,4 +99,5 @@ return [
     'flash_qr_generated'   => 'QR Code generated.',
     'errors_edit_collected' => 'Cannot edit a declaration already collected.',
     'errors_delete_processed' => 'Cannot delete a declaration already processed.',
+    'error_services_other_etab' => 'All lines must refer to departments of the same facility.',
 ];

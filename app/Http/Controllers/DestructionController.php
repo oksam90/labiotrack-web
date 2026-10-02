@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -34,6 +36,14 @@ class DestructionController extends Controller
         $query   = DB::table('collectes')->where('id', $collecteId);
         $user->filtreEtab($query);
         $collecte = $query->firstOrFail();
+
+        // Une collecte n'est détruite qu'une fois : on renvoie au certificat existant.
+        $existante = DB::table('destructions')->where('collecte_id', $collecte->id)->value('id');
+        if ($existante) {
+            return redirect()->route('destructions.certificat', $existante)
+                ->with('error', __('destructions.errors_already_destroyed'));
+        }
+
         return view('destructions.create', compact('collecte'));
     }
 
@@ -58,33 +68,59 @@ class DestructionController extends Controller
         // Récupérer l'etablissement_id depuis la collecte associée.
         // SECURITY : filtreEtab empêche un prestataire de détruire une collecte
         // située hors de son réseau (DB::table() ne passe pas par les scopes).
-        $collecteQuery = DB::table('collectes')->where('id', $request->collecte_id);
-        $user->filtreEtab($collecteQuery, 'etablissement_id');
-        $collecte = $collecteQuery->firstOrFail();
+        //
+        // SECURITY / intégrité (M3) : verrou sur la collecte + contrôle d'état
+        // dans la même transaction que l'insertion. Une collecte annulée ou déjà
+        // détruite ne produit plus de (second) certificat, même en cas de
+        // double soumission.
+        $resultat = DB::transaction(function () use ($request, $user, $certificatNum) {
+            $collecteQuery = DB::table('collectes')->where('id', $request->collecte_id)->lockForUpdate();
+            $user->filtreEtab($collecteQuery, 'etablissement_id');
+            $collecte = $collecteQuery->firstOrFail();
 
-        $id = DB::table('destructions')->insertGetId([
-            'collecte_id'       => $request->collecte_id,
-            'etablissement_id'  => $collecte->etablissement_id,
-            'prestataire_id'    => $user->id,
-            'poids_reel_kg'     => $request->poids_reel_kg,
-            'methode'           => $request->methode,
-            'site_traitement'   => $request->site_traitement,
-            'certificat_numero' => $certificatNum,
-            'date_reception'    => $request->date_reception,
-            'date_destruction'  => $request->date_destruction,
-            'conforme'          => $request->boolean('conforme', true),
-            'notes'             => $request->notes,
-            'created_at'        => now(),
-            'updated_at'        => now(),
-        ]);
+            if ($collecte->statut === 'annule') {
+                return ['erreur' => __('destructions.errors_collecte_cancelled')];
+            }
+            $existante = DB::table('destructions')->where('collecte_id', $collecte->id)->value('id');
+            if ($existante) {
+                return ['erreur' => __('destructions.errors_already_destroyed'), 'id' => $existante];
+            }
 
-        $declarationIds = DB::table('collecte_declarations')
-            ->where('collecte_id', $request->collecte_id)->pluck('declaration_id');
-        DB::table('declarations')->whereIn('id', $declarationIds)->update([
-            'statut'        => 'detruit',
-            'poids_reel_kg' => $request->poids_reel_kg,
-            'updated_at'    => now(),
-        ]);
+            $id = DB::table('destructions')->insertGetId([
+                'collecte_id'       => $request->collecte_id,
+                'etablissement_id'  => $collecte->etablissement_id,
+                'prestataire_id'    => $user->id,
+                'poids_reel_kg'     => $request->poids_reel_kg,
+                'methode'           => $request->methode,
+                'site_traitement'   => $request->site_traitement,
+                'certificat_numero' => $certificatNum,
+                'date_reception'    => $request->date_reception,
+                'date_destruction'  => $request->date_destruction,
+                'conforme'          => $request->boolean('conforme', true),
+                'notes'             => $request->notes,
+                'created_at'        => now(),
+                'updated_at'        => now(),
+            ]);
+
+            $declarationIds = DB::table('collecte_declarations')
+                ->where('collecte_id', $request->collecte_id)->pluck('declaration_id');
+            DB::table('declarations')->whereIn('id', $declarationIds)->update([
+                'statut'        => 'detruit',
+                'poids_reel_kg' => $request->poids_reel_kg,
+                'updated_at'    => now(),
+            ]);
+
+            return ['id' => $id, 'collecte' => $collecte];
+        });
+
+        if (isset($resultat['erreur'])) {
+            return isset($resultat['id'])
+                ? redirect()->route('destructions.certificat', $resultat['id'])->with('error', $resultat['erreur'])
+                : back()->withInput()->with('error', $resultat['erreur']);
+        }
+
+        $id       = $resultat['id'];
+        $collecte = $resultat['collecte'];
 
         // Génération PDF certificat au format Bordereau
         $destruction   = DB::table('destructions')->find($id);
@@ -95,13 +131,11 @@ class DestructionController extends Controller
         $pdf  = Pdf::loadView('destructions.certificat_pdf',
             compact('destruction','collecte','etablissement','certificatNum','prestataire'));
         $pdf->setPaper('A4');
-        // Créer le dossier s'il n'existe pas
-        $dossier = storage_path('app/public/certificats');
-        if (! is_dir($dossier)) {
-            mkdir($dossier, 0755, true); // true = création récursive
-        }
-        $path = 'certificats/cert_' . $id . '.pdf';
-        $pdf->save(storage_path('app/public/' . $path));
+        // SECURITY : disque PRIVÉ — jamais sous /storage public (document légal
+        // nominatif). Le téléchargement passe par certificatPdf(), qui contrôle
+        // le périmètre de l'utilisateur.
+        $path = 'certificats/' . $collecte->etablissement_id . '/' . Str::uuid() . '.pdf';
+        Storage::disk('local')->put($path, $pdf->output());
         DB::table('destructions')->where('id', $id)->update(['certificat_path' => $path]);
 
         DB::table('alertes')->insert([

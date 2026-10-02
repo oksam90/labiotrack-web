@@ -44,6 +44,7 @@ class DeclarationController extends Controller
 
     public function create()
     {
+        $this->authorize('create', Declaration::class);
         $services       = Service::actif()->orderBy('nom')->get();
         $typeContenants = TypeContenant::orderBy('nom')->get();
         return view('declarations.create', compact('services','typeContenants'));

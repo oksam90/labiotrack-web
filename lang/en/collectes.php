@@ -75,7 +75,8 @@ return [
     // ── Empty states / messages ─────────────────────────────────
     'empty_list'        => 'No collections recorded',
     'created_success'   => 'Collection created — Manifest no. :ref',
-    'cannot_determine_etab' => 'Unable to determine the establishment.',
     'declarations_out_of_scope' => 'Some selected declarations do not belong to your network.',
     'collecteur_out_of_scope' => 'The selected collector does not belong to your network.',
+    'declarations_not_in_stock' => "Some selected declarations are no longer in storage (already collected or destroyed).",
+    'declarations_multi_etab' => "A collection can only group declarations from a single facility.",
 ];

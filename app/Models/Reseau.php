@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  *
  * Périmètre encapsulé : établissements rattachés, utilisateurs, contenants,
  * services. Le SUPERADMIN voit tous les réseaux, l'AdminRéseau ne voit
- * que le sien (via ReseauScope sur reseau_id).
+ * que le sien (TenantScope + User::filtreEtab, via reseau_id).
  */
 class Reseau extends Model
 {

@@ -114,4 +114,6 @@ return [
     // Flash messages
     'created_success'    => 'Destruction enregistrée — Certificat n° :ref',
     'flash_created'      => 'Destruction enregistrée. Certificat n° :ref généré.',
+    'errors_already_destroyed' => "Cette collecte a déjà fait l'objet d'une destruction : voici son certificat.",
+    'errors_collecte_cancelled' => "Cette collecte a été annulée : aucune destruction ne peut être enregistrée.",
 ];

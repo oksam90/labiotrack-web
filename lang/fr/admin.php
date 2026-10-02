@@ -33,7 +33,6 @@ return [
     'confirm_delete_user' => 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
 
     'role_superadmin'    => 'SuperAdmin',
-    'role_admin'         => 'Admin (établissement)',
     'role_admin_reseau'  => 'AdminRéseau',
     'role_qhse'          => 'QHSE',
     'role_agent'         => 'Agent',
@@ -62,6 +61,7 @@ return [
     'etab_type_hopital'  => 'Hôpital',
     'etab_type_cabinet'  => 'Cabinet',
     'etab_type_laboratoire' => 'Laboratoire',
+    'etab_type_industrielle' => 'Industrielle',
 
     // ── Services ────────────────────────────────────────────────
     'page_services_title' => 'Services',
@@ -148,11 +148,11 @@ return [
     'errors_etab_not_found'              => 'Établissement introuvable.',
     'errors_superadmin_only'             => 'Action réservée au superadmin.',
     'errors_admin_reseau_etab_not_in_network' => "Cet établissement n'appartient pas à votre réseau.",
-    'errors_admin_reseau_create_superadmin_only' => 'Seul le superadmin peut créer un AdminRéseau.',
-    'errors_admin_reseau_promote_superadmin_only' => 'Seul le superadmin peut désigner un AdminRéseau.',
     'errors_client_signataire_needs_etab' => 'Le rôle Client signataire requiert un établissement.',
     'errors_collecteur_needs_reseau'     => 'Les rôles Collecteur et Prestataire requièrent le rattachement à un réseau.',
-    'errors_user_not_in_network'         => "Cet utilisateur n'appartient pas à votre réseau.",
+    'errors_role_not_assignable'         => "Vous n'êtes pas autorisé à attribuer ce rôle.",
+    'errors_cant_change_own_role'        => 'Vous ne pouvez pas modifier votre propre rôle.',
+    'errors_user_out_of_scope'           => "Ce compte ne fait pas partie de votre périmètre.",
     'errors_cant_delete_self'            => 'Vous ne pouvez pas supprimer votre propre compte.',
     'errors_cant_deactivate_self'        => 'Vous ne pouvez pas désactiver votre propre compte.',
     'errors_service_not_found'           => 'Service introuvable.',

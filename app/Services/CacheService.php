@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
  *   rapport:{etabId}:{debut}:{fin}  → données collectées pour un rapport
  *   superadmin:kpis:{mois}          → KPIs réseau global
  *   superadmin:etab:{id}:{mois}     → KPIs d'un établissement
- *   financier:{etabId}:{mois}       → analyse financière
+ *   financier:{perimetre}:{mois}    → analyse financière (global / reseau-X / etab-X)
  */
 class CacheService
 {
@@ -47,9 +47,22 @@ class CacheService
         return "superadmin:etab:{$etabId}:{$mois}";
     }
 
-    public static function financierKey(?int $etabId, string $mois): string
+    /** @param string $perimetre résultat de self::perimetre() */
+    public static function financierKey(string $perimetre, string $mois): string
     {
-        return "financier:" . ($etabId ?? 'global') . ":{$mois}";
+        return "financier:{$perimetre}:{$mois}";
+    }
+
+    /**
+     * Identifiant du périmètre de données d'un utilisateur, à inclure dans
+     * toute clé de cache de données filtrées par rôle :
+     * « global » (superadmin), « reseau-{id} », « etab-{id} » (0 = aucun).
+     */
+    public static function perimetre(\App\Models\User $user): string
+    {
+        if ($user->isGlobal())       return 'global';
+        if ($user->isReseauScoped()) return 'reseau-' . (int) $user->reseau_id;
+        return 'etab-' . (int) $user->etablissement_id;
     }
 
     // ── Invalidation ──────────────────────────────────────────
@@ -74,8 +87,13 @@ class CacheService
         Cache::forget(self::superadminEtabKey($etabId, $mois));
 
         // Analyse financière
-        Cache::forget(self::financierKey($etabId, $mois));
-        Cache::forget(self::financierKey(null, $mois)); // global
+        Cache::forget(self::financierKey('etab-' . $etabId, $mois));
+        Cache::forget(self::financierKey('global', $mois));
+        $reseauId = \Illuminate\Support\Facades\DB::table('etablissements')->where('id', $etabId)->value('reseau_id');
+        if ($reseauId) {
+            Cache::forget(self::financierKey('reseau-' . $reseauId, $mois));
+            Cache::forget(self::superadminKpisKey($mois, (int) $reseauId));
+        }
 
         // Rapports du mois courant (début/fin classiques)
         $debutMois = now()->startOfMonth()->toDateString();

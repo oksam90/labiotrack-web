@@ -75,7 +75,8 @@ return [
     // ── Empty states / messages ────────────────────────────────
     'empty_list'        => 'Aucune collecte enregistrée',
     'created_success'   => 'Collecte créée — Bordereau n° :ref',
-    'cannot_determine_etab' => "Impossible de déterminer l'établissement.",
     'declarations_out_of_scope' => "Certaines déclarations sélectionnées n'appartiennent pas à votre réseau.",
     'collecteur_out_of_scope' => "Le collecteur sélectionné n'appartient pas à votre réseau.",
+    'declarations_not_in_stock' => "Certaines déclarations sélectionnées ne sont plus en stock (déjà collectées ou détruites).",
+    'declarations_multi_etab' => "Une collecte ne peut regrouper que les déclarations d'un seul établissement.",
 ];

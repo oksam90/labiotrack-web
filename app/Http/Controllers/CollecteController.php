@@ -84,19 +84,8 @@ class CollecteController extends Controller
             'photo'           => 'nullable|image|max:5120',
         ]);
 
-        $user      = Auth::user();
-        // SECURITY : DB::table() contourne les global scopes Eloquent — on
-        // applique donc explicitement le périmètre réseau/établissement de
-        // l'utilisateur pour qu'un collecteur ne puisse pas collecter des
-        // déclarations situées hors de son réseau de rattachement.
-        $declQuery = DB::table('declarations')->whereIn('id', $request->declarations);
-        $user->filtreEtab($declQuery, 'etablissement_id');
-        $declarations = $declQuery->get();
-
-        // Si des IDs demandés ne ressortent pas → hors périmètre → on refuse.
-        if ($declarations->count() !== count(array_unique($request->declarations))) {
-            return back()->withErrors(['declarations' => __('collectes.declarations_out_of_scope')]);
-        }
+        $user = Auth::user();
+        $ids  = array_values(array_unique(array_map('intval', $request->declarations)));
 
         // SECURITY : un collecteur assigné doit relever du même réseau que le
         // créateur (empêche l'assignation cross-réseau via un POST forgé).
@@ -108,54 +97,72 @@ class CollecteController extends Controller
             }
         }
 
-        $totalContenants = $declarations->sum('nombre_contenants');
-        $totalPoids      = $declarations->sum('poids_estime_kg');
-        $numeroBordereau = 'BRD-' . date('Ymd') . '-' . strtoupper(uniqid());
-
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('collectes/photos', 'public');
         }
 
-        // Établissement de la collecte : celui de l'utilisateur s'il en a un
-        // (qhse, agent), sinon celui de la déclaration collectée (superadmin,
-        // collecteur, prestataire — sans établissement fixe). Les déclarations
-        // ont déjà été filtrées au périmètre de l'utilisateur ci-dessus.
-        $etabId = $user->etablissement_id
-            ?: ($declarations->first()->etablissement_id ?? null);
+        // SECURITY / intégrité (M3) : lecture des déclarations sous verrou dans
+        // la transaction qui les passe « en_transport ». Deux collectes
+        // simultanées (double-clic, deux collecteurs) ne peuvent plus embarquer
+        // la même déclaration.
+        $resultat = DB::transaction(function () use ($user, $ids, $request, $photoPath) {
+            // DB::table() contourne les global scopes Eloquent : périmètre explicite.
+            $declQuery = DB::table('declarations')->whereIn('id', $ids)->lockForUpdate();
+            $user->filtreEtab($declQuery, 'etablissement_id');
+            $declarations = $declQuery->get();
 
-        if (! $etabId) {
-            return back()->withErrors(['declarations' => __('collectes.cannot_determine_etab')]);
-        }
+            // IDs absents → hors périmètre.
+            if ($declarations->count() !== count($ids)) {
+                return ['erreur' => __('collectes.declarations_out_of_scope')];
+            }
+            // Déjà collectées / détruites → refus.
+            if ($declarations->contains(fn ($d) => $d->statut !== 'en_stock')) {
+                return ['erreur' => __('collectes.declarations_not_in_stock')];
+            }
+            // Un bordereau = un établissement (traçabilité + signature du client).
+            if ($declarations->pluck('etablissement_id')->unique()->count() > 1) {
+                return ['erreur' => __('collectes.declarations_multi_etab')];
+            }
 
-        $collecteId = DB::table('collectes')->insertGetId([
-            'etablissement_id'  => $etabId,
-            'collecteur_id'     => $request->collecteur_id,
-            'numero_bordereau'  => $numeroBordereau,
-            'nombre_contenants' => $totalContenants,
-            'poids_declare_kg'  => $totalPoids,
-            'vehicule'          => $request->vehicule,
-            'photo'             => $photoPath,
-            'statut'            => 'en_cours',
-            'date_collecte'     => now(),
-            'notes'             => $request->notes,
-            'created_at'        => now(),
-            'updated_at'        => now(),
-        ]);
+            $etabId          = (int) $declarations->first()->etablissement_id;
+            $numeroBordereau = 'BRD-' . date('Ymd') . '-' . strtoupper(uniqid());
 
-        foreach ($request->declarations as $declId) {
-            DB::table('collecte_declarations')->insert([
-                'collecte_id'    => $collecteId,
-                'declaration_id' => $declId,
+            $collecteId = DB::table('collectes')->insertGetId([
+                'etablissement_id'  => $etabId,
+                'collecteur_id'     => $request->collecteur_id,
+                'numero_bordereau'  => $numeroBordereau,
+                'nombre_contenants' => $declarations->sum('nombre_contenants'),
+                'poids_declare_kg'  => $declarations->sum('poids_estime_kg'),
+                'vehicule'          => $request->vehicule,
+                'photo'             => $photoPath,
+                'statut'            => 'en_cours',
+                'date_collecte'     => now(),
+                'notes'             => $request->notes,
+                'created_at'        => now(),
+                'updated_at'        => now(),
             ]);
-            DB::table('declarations')->where('id', $declId)->update([
+
+            foreach ($ids as $declId) {
+                DB::table('collecte_declarations')->insert([
+                    'collecte_id'    => $collecteId,
+                    'declaration_id' => $declId,
+                ]);
+            }
+            DB::table('declarations')->whereIn('id', $ids)->update([
                 'statut'     => 'en_transport',
                 'updated_at' => now(),
             ]);
+
+            return ['id' => $collecteId, 'numero' => $numeroBordereau];
+        });
+
+        if (isset($resultat['erreur'])) {
+            return back()->withInput()->withErrors(['declarations' => $resultat['erreur']]);
         }
 
-        return redirect()->route('collectes.show', $collecteId)
-            ->with('success', __('collectes.created_success', ['ref' => $numeroBordereau]));
+        return redirect()->route('collectes.show', $resultat['id'])
+            ->with('success', __('collectes.created_success', ['ref' => $resultat['numero']]));
     }
 
     public function show($id)
@@ -206,7 +213,7 @@ class CollecteController extends Controller
         $collecte = $query->firstOrFail();
 
         if ($collecte->bordereau_pdf_path
-            && Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            && Storage::disk('local')->exists($collecte->bordereau_pdf_path)) {
             return redirect()->route('collectes.bordereau.download', $collecte->id);
         }
 
@@ -226,11 +233,11 @@ class CollecteController extends Controller
         $collecte = $query->firstOrFail();
 
         if (! $collecte->bordereau_pdf_path
-            || ! Storage::disk('public')->exists($collecte->bordereau_pdf_path)) {
+            || ! Storage::disk('local')->exists($collecte->bordereau_pdf_path)) {
             return back()->with('error', __('collectes.bordereau_not_ready'));
         }
 
-        return Storage::disk('public')->download(
+        return Storage::disk('local')->download(
             $collecte->bordereau_pdf_path,
             "bordereau_{$collecte->numero_bordereau}.pdf"
         );

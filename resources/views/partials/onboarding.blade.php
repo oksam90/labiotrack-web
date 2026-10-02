@@ -7,7 +7,6 @@
         'collecteur'        => 'collectes.index',
         'prestataire'       => 'collectes.index',
         'client_signataire' => 'collectes.index',
-        'admin'             => 'admin.index',
         'admin_reseau'      => 'superadmin.index',
         'superadmin'        => 'superadmin.index',
     ];

@@ -3,12 +3,11 @@
 @section("content")
 @php
     $current = auth()->user();
-    // Rôles attribuables selon l'utilisateur courant
-    $rolesDisponibles = $current->isSuperAdmin()
-        ? ["superadmin","admin","admin_reseau","qhse","agent","collecteur","prestataire","client_signataire"]
-        : ($current->isAdminReseau()
-            ? ["admin","qhse","agent","client_signataire"] // AdminRéseau ne peut pas créer un autre AdminRéseau
-            : ["qhse","agent","client_signataire"]); // admin local
+    // Rôles attribuables : même liste blanche que le contrôleur (User::assignableRoles).
+    // En auto-édition, seul le rôle actuel est proposé : personne ne change son propre rôle.
+    $rolesDisponibles = ($user && (int) $user->id === (int) $current->id)
+        ? [$user->role]
+        : $current->assignableRoles();
 @endphp
 
 <div class="page-header"><h4>{{ $user ? __('admin.header_user_form_edit') : __('admin.header_user_form_new') }}</h4></div>

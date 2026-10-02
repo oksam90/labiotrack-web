@@ -70,4 +70,5 @@ return [
     'show_status'       => 'Statut :',
     'btn_validate_receipt' => 'Valider la réception',
     'btn_receipt_validated' => 'Réception validée',
+    'errors_declarations_out_of_scope' => "Certaines déclarations sélectionnées n'appartiennent pas à cet établissement ou ne sont plus en stock.",
 ];

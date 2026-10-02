@@ -9,7 +9,7 @@ use App\Models\User;
  * DeclarationPolicy — matrice d'accès LaBioTrack.
  *
  * superadmin / collecteur / prestataire → toutes déclarations
- * admin_reseau / admin                  → déclarations de leur réseau
+ * admin_reseau                          → déclarations de leur réseau
  * qhse                                  → déclarations de leur établissement
  * agent                                 → ses propres déclarations
  */
@@ -38,7 +38,7 @@ class DeclarationPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['superadmin','admin','admin_reseau','qhse','agent']);
+        return in_array($user->role, ['superadmin','admin_reseau','qhse','agent']);
     }
 
     public function update(User $user, Declaration $declaration): bool

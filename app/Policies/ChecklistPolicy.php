@@ -11,7 +11,7 @@ class ChecklistPolicy
     {
         // prestataire exclu : il n'est pas responsable des checklists internes
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','agent']);
+            ['superadmin','admin_reseau','qhse','agent']);
     }
 
     public function view(User $user, Checklist $checklist): bool
@@ -27,9 +27,9 @@ class ChecklistPolicy
 
     public function create(User $user): bool
     {
-        // Prestataire exclu — admin_reseau / admin / QHSE uniquement
+        // Prestataire exclu — admin_reseau / QHSE uniquement
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse']);
+            ['superadmin','admin_reseau','qhse']);
     }
 
     public function update(User $user, Checklist $checklist): bool

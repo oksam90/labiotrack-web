@@ -10,7 +10,7 @@ class CollectePolicy
     public function viewAny(User $user): bool
     {
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','collecteur','prestataire','client_signataire']);
+            ['superadmin','admin_reseau','qhse','collecteur','prestataire','client_signataire']);
     }
 
     public function view(User $user, Collecte $collecte): bool
@@ -28,7 +28,7 @@ class CollectePolicy
         // client_signataire EXCLU : son rôle est uniquement de signer
         // les bordereaux existants, pas de créer de nouvelles collectes.
         return in_array($user->role,
-            ['superadmin','admin','admin_reseau','qhse','collecteur']);
+            ['superadmin','admin_reseau','qhse','collecteur']);
     }
 
     // L'ability `valider` (double signature texte) a été retirée :
@@ -72,7 +72,7 @@ class CollectePolicy
                 && (int) $collecte->collecteur_id === (int) $user->id;
         }
 
-        // admin, admin_reseau, prestataire → périmètre réseau
+        // admin_reseau, prestataire → périmètre réseau
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($collecte->etablissement_id);
         }
