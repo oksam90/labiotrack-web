@@ -36,7 +36,7 @@ class ChecklistController extends Controller
         $user = Auth::user();
         // Seuls les rôles habilités peuvent créer une checklist
         // Le prestataire n'est pas responsable des checklists internes (aligné avec ChecklistPolicy)
-        if (! in_array($user->role, ['superadmin','admin','admin_reseau','qhse'])) {
+        if (! in_array($user->role, ['superadmin','admin_reseau','qhse'])) {
             abort(403, __('checklists.errors_access_denied'));
         }
 

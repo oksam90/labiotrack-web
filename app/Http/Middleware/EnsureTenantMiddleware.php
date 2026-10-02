@@ -15,7 +15,7 @@ use App\Models\Etablissement;
  * Logique par rôle :
  *  - superadmin              → vue globale par défaut, peut zoomer sur n'importe
  *                              quel établissement via session admin_tenant_id
- *  - admin_reseau / admin    → vue limitée à leur réseau, peuvent zoomer sur
+ *  - admin_reseau            → vue limitée à leur réseau, peuvent zoomer sur
  *                              un établissement de LEUR réseau (vérification reseau_id)
  *  - collecteur / prestataire → vue globale, peuvent zoomer sur tout établissement
  *  - qhse / agent            → tenant fixe = leur établissement

@@ -10,7 +10,6 @@ use App\Models\User;
  *
  * superadmin    → CRUD complet sur tous les établissements / réseaux
  * admin_reseau  → CRUD sur les établissements de SON réseau (sauf delete)
- * admin         → modifie son propre établissement
  */
 class EtablissementPolicy
 {
@@ -34,7 +33,7 @@ class EtablissementPolicy
         if ($user->isAdminReseau()) {
             return $user->reseau_id === $e->reseau_id;
         }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return false;
     }
 
     /**
@@ -51,7 +50,7 @@ class EtablissementPolicy
         if ($user->isAdminReseau()) {
             return $user->reseau_id === $e->reseau_id;
         }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return false;
     }
 
     public function manageServices(User $user, Etablissement $e): bool
@@ -60,6 +59,6 @@ class EtablissementPolicy
         if ($user->isAdminReseau()) {
             return $user->reseau_id === $e->reseau_id;
         }
-        return $user->isAdmin() && $user->etablissement_id === $e->id;
+        return false;
     }
 }

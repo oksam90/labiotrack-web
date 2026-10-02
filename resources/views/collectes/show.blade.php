@@ -30,7 +30,7 @@
             <i class="bi bi-shield-check me-1"></i>{{ __('collectes.btn_view_signature') }}
         </a>
         @endif
-        @if(!$destruction && in_array(Auth::user()->role,['prestataire','admin','superadmin','admin_reseau']))
+        @if(!$destruction && in_array(Auth::user()->role,['prestataire','superadmin','admin_reseau']))
         <a href="{{ route('destructions.create', $collecte->id) }}" class="btn btn-danger btn-sm"><i class="bi bi-fire me-1"></i>{{ __('collectes.btn_confirm_destruction') }}</a>
         @endif
     </div>

@@ -15,7 +15,6 @@ return [
     'prestataire_cta'   => 'View collections',
     'client_signataire' => 'Your role: electronically sign your facility’s collection manifests.',
     'client_signataire_cta' => 'Manifests to sign',
-    'admin'             => 'Manage the users, departments and facilities within your scope.',
     'admin_cta'         => 'Administration',
     'admin_reseau'      => 'Steer your network’s facilities and their metrics.',
     'admin_reseau_cta'  => 'Network view',

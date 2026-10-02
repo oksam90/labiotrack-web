@@ -28,7 +28,7 @@ class SignaturePolicy
     public function viewAny(User $user): bool
     {
         return in_array($user->role,
-            ['superadmin', 'admin', 'admin_reseau', 'qhse', 'collecteur', 'prestataire', 'agent', 'client_signataire']);
+            ['superadmin', 'admin_reseau', 'qhse', 'collecteur', 'prestataire', 'agent', 'client_signataire']);
     }
 
     /**
@@ -44,7 +44,7 @@ class SignaturePolicy
             return $signature->collecte
                 && (int) $signature->collecte->collecteur_id === (int) $user->id;
         }
-        // admin, admin_reseau, prestataire → périmètre réseau
+        // admin_reseau, prestataire → périmètre réseau
         if ($user->isReseauScoped()) {
             return $user->canAccessTenant($signature->etablissement_id);
         }

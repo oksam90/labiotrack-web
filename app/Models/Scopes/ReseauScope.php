@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
  *
  * Comportement :
  *  - SUPERADMIN / collecteur / prestataire → aucun filtre (vue globale)
- *  - admin_reseau / admin → restreint aux établissements de leur reseau_id
+ *  - admin_reseau → restreint aux établissements de leur reseau_id
  *  - qhse / agent → restreint à leur etablissement_id
  *
  * Le scope s'applique sur les modèles ayant soit :
@@ -37,7 +37,7 @@ class ReseauScope implements Scope
         $table   = $model->getTable();
         $columns = $this->getModelColumns($model);
 
-        // SECURITY (fail-closed) : un rôle réseau (admin_reseau, admin,
+        // SECURITY (fail-closed) : un rôle réseau (admin_reseau,
         // collecteur, prestataire) sans reseau_id ne voit RIEN plutôt que TOUT.
         if ($user->isReseauScoped() && ! $user->reseau_id) {
             $builder->whereRaw('1 = 0');

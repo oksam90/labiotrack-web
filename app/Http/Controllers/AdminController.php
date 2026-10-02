@@ -33,7 +33,7 @@ class AdminController extends Controller
                 $q->select('id')->from('etablissements')->where('reseau_id', $user->reseau_id);
             });
         }
-        return $query;
+        return $query->whereRaw('1 = 0'); // fail-closed : admin réseau sans réseau
     }
 
     // ── Établissements ──────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ class AdminController extends Controller
             ->leftJoin('reseaux', 'etablissements.reseau_id', '=', 'reseaux.id')
             ->select('etablissements.*', 'reseaux.nom as reseau_nom');
 
-        // Filtrer par réseau pour admin_reseau / admin
+        // Filtrer par réseau pour admin_reseau
         $this->scopeReseau($query, 'etablissements.id');
 
         $etablissements = $query->orderBy('etablissements.nom')->paginate(10);
@@ -197,7 +197,7 @@ class AdminController extends Controller
             ->leftJoin('etablissements', 'users.etablissement_id', '=', 'etablissements.id')
             // Le réseau se résout soit directement via users.reseau_id (collecteur,
             // prestataire, admin_reseau — sans établissement fixe), soit via
-            // l'établissement de rattachement (qhse, agent, admin local).
+            // l'établissement de rattachement (qhse, agent, client_signataire).
             ->leftJoin('reseaux', 'reseaux.id', '=', DB::raw('COALESCE(users.reseau_id, etablissements.reseau_id)'))
             ->select('users.*', 'etablissements.nom as etablissement_nom', 'reseaux.nom as reseau_nom')
             ->whereNull('users.anonymized_at') // masque les comptes anonymisés (RGPD)
@@ -205,7 +205,6 @@ class AdminController extends Controller
 
         // SUPERADMIN → tous les utilisateurs
         // ADMIN_RESEAU → utilisateurs du réseau (via etablissement.reseau_id ou users.reseau_id)
-        // ADMIN local → utilisateurs de son établissement
         if ($user->isAdminReseau() && $user->reseau_id) {
             $query->where(function ($q) use ($user) {
                 $q->where('users.reseau_id', $user->reseau_id)
@@ -214,9 +213,8 @@ class AdminController extends Controller
                   });
             });
         } elseif (! $user->isSuperAdmin()) {
-            // Admin local → son établissement. Fail-closed : sans établissement
-            // (ou admin_reseau sans réseau) il ne voit personne, et non tout le monde.
-            $query->where('users.etablissement_id', $user->etablissement_id ?? 0);
+            // Fail-closed : admin_reseau sans réseau → personne, et non tout le monde.
+            $query->whereRaw('1 = 0');
         }
 
         $users          = $query->paginate(10);
@@ -228,10 +226,8 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         $q = DB::table('etablissements')->where('actif', 1)->orderBy('nom');
-        if ($user->isAdminReseau()) {
-            $q->where('reseau_id', $user->reseau_id ?? 0);
-        } elseif (! $user->isSuperAdmin()) {
-            $q->where('id', $user->etablissement_id ?? 0); // admin local : son étab
+        if (! $user->isSuperAdmin()) {
+            $q->where('reseau_id', $user->reseau_id ?? 0); // admin réseau : son réseau (fail-closed)
         }
         return $q->get();
     }
@@ -413,7 +409,6 @@ class AdminController extends Controller
      *  - superadmin   : valeurs saisies
      *  - soi-même     : rattachement actuel inchangé (pas d'auto-mutation)
      *  - admin_reseau : son réseau ; l'établissement doit en faire partie
-     *  - admin        : son établissement
      */
     private function resolveRattachement($actor, string $role, $etabId, $reseauId, ?object $target = null): array
     {
@@ -431,9 +426,6 @@ class AdminController extends Controller
                 abort_unless($etab && (int) $etab->reseau_id === (int) $actor->reseau_id, 403,
                     __('admin.errors_admin_reseau_etab_not_in_network'));
             }
-        } elseif (! $actor->isSuperAdmin()) {
-            $etabId   = $actor->etablissement_id;
-            $reseauId = null; // rôles locaux : le réseau se déduit de l'établissement
         }
 
         // client_signataire : SÉCURITÉ — un établissement est obligatoire
@@ -462,10 +454,8 @@ class AdminController extends Controller
             ->join('etablissements', 'services.etablissement_id', '=', 'etablissements.id')
             ->select('services.*', 'etablissements.nom as etablissement_nom');
 
-        if ($user->isAdminReseau() && $user->reseau_id) {
-            $query->where('etablissements.reseau_id', $user->reseau_id);
-        } elseif (! $user->isSuperAdmin() && ! $user->isGlobal() && $user->etablissement_id) {
-            $query->where('services.etablissement_id', $user->etablissement_id);
+        if (! $user->isSuperAdmin()) {
+            $query->where('etablissements.reseau_id', $user->reseau_id ?? 0); // fail-closed
         }
 
         $services       = $query->orderBy('etablissements.nom')->orderBy('services.nom')->paginate(10);
@@ -483,16 +473,12 @@ class AdminController extends Controller
         $user   = Auth::user();
         $etabId = $request->etablissement_id;
 
-        // SECURITY : AdminRéseau → vérifier que l'étab appartient à son réseau
-        if ($user->isAdminReseau() && $user->reseau_id) {
+        // SECURITY : AdminRéseau → l'étab doit appartenir à son réseau (fail-closed
+        // si l'admin n'a pas de réseau).
+        if (! $user->isSuperAdmin()) {
             $etab = DB::table('etablissements')->find($etabId);
-            abort_unless($etab && $etab->reseau_id === $user->reseau_id, 403,
+            abort_unless($etab && $user->reseau_id && (int) $etab->reseau_id === (int) $user->reseau_id, 403,
                 __('admin.errors_admin_reseau_etab_not_in_network'));
-        }
-
-        // Admin local : forcer son propre établissement
-        if (! $user->isGlobal() && ! $user->isAdminReseau() && $user->etablissement_id) {
-            $etabId = $user->etablissement_id;
         }
 
         DB::table('services')->insert([

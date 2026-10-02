@@ -8,7 +8,7 @@
         <small class="text-muted">{{ now()->locale(app()->getLocale())->isoFormat('dddd D MMMM YYYY') }} — {{ $etablissement->nom ?? __('dashboard.platform_fallback') }}</small>
     </div>
     <div class="d-flex gap-2">
-        @if(in_array(Auth::user()->role, ['qhse','admin','admin_reseau','superadmin','prestataire']))
+        @if(in_array(Auth::user()->role, ['qhse','admin_reseau','superadmin','prestataire']))
         <a href="{{ route('rapports.index') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-file-pdf me-1"></i>{{ __('dashboard.btn_report') }}</a>
         @endif
         <a href="{{ route('declarations.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus me-1"></i>{{ __('dashboard.btn_declare') }}</a>

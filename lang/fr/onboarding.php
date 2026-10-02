@@ -15,7 +15,6 @@ return [
     'prestataire_cta'   => 'Voir les collectes',
     'client_signataire' => 'Votre rôle : signer électroniquement les bordereaux de collecte de votre établissement.',
     'client_signataire_cta' => 'Bordereaux à signer',
-    'admin'             => 'Administrez les utilisateurs, services et structures de votre périmètre.',
     'admin_cta'         => 'Administration',
     'admin_reseau'      => 'Pilotez les établissements de votre réseau et leurs indicateurs.',
     'admin_reseau_cta'  => 'Vue réseau',

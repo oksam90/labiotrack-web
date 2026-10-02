@@ -23,55 +23,42 @@ class AdminUserSecurityTest extends TestCase
         ], $overrides);
     }
 
-    public function test_un_admin_ne_peut_pas_se_promouvoir_superadmin(): void
+    public function test_le_profil_admin_n_existe_plus(): void
     {
-        $etab  = $this->makeEtablissement($this->makeReseau()->id);
-        $admin = $this->makeUser('admin', $etab->id);
+        $super = $this->makeUser('superadmin');
 
-        $this->actingAs($admin)->put("/admin/utilisateurs/{$admin->id}", $this->payload([
-            'email' => $admin->email, 'role' => 'superadmin', 'etablissement_id' => $etab->id,
-        ]))->assertForbidden();
+        $this->actingAs($super)->post('/admin/utilisateurs', $this->payload([
+            'email' => 'ancien-admin@test.sn', 'role' => 'admin',
+            'password' => 'password1', 'password_confirmation' => 'password1',
+        ]))->assertSessionHasErrors('role');
 
-        $this->assertSame('admin', DB::table('users')->find($admin->id)->role);
+        $this->assertNull(DB::table('users')->where('email', 'ancien-admin@test.sn')->first());
+        $this->assertNotContains('admin', \App\Models\User::ROLES);
     }
 
-    public function test_un_admin_peut_modifier_son_profil_sans_changer_de_role(): void
+    public function test_un_admin_reseau_peut_modifier_son_profil_sans_changer_de_reseau(): void
     {
-        $etab  = $this->makeEtablissement($this->makeReseau()->id);
-        $admin = $this->makeUser('admin', $etab->id);
+        $r  = $this->makeReseau('R1');
+        $ar = $this->makeUser('admin_reseau', null, $r->id);
 
-        $this->actingAs($admin)->put("/admin/utilisateurs/{$admin->id}", $this->payload([
-            'nom' => 'Renommé', 'email' => $admin->email, 'role' => 'admin',
-            'etablissement_id' => $this->makeEtablissement()->id, // ignoré : rattachement figé
+        $this->actingAs($ar)->put("/admin/utilisateurs/{$ar->id}", $this->payload([
+            'nom' => 'Renommé', 'email' => $ar->email, 'role' => 'admin_reseau',
+            'reseau_id' => $this->makeReseau('R2')->id, // ignoré : rattachement figé
         ]))->assertRedirect();
 
-        $row = DB::table('users')->find($admin->id);
+        $row = DB::table('users')->find($ar->id);
         $this->assertSame('Renommé', $row->nom);
-        $this->assertSame($etab->id, (int) $row->etablissement_id);
+        $this->assertSame($r->id, (int) $row->reseau_id);
     }
 
-    public function test_un_admin_ne_peut_pas_creer_de_superadmin_ni_d_admin_reseau(): void
+    public function test_un_admin_reseau_cree_un_agent_dans_un_etablissement_de_son_reseau(): void
     {
-        $etab  = $this->makeEtablissement($this->makeReseau()->id);
-        $admin = $this->makeUser('admin', $etab->id);
+        $r    = $this->makeReseau();
+        $etab = $this->makeEtablissement($r->id);
+        $ar   = $this->makeUser('admin_reseau', null, $r->id);
 
-        foreach (['superadmin', 'admin_reseau', 'admin'] as $i => $role) {
-            $this->actingAs($admin)->post('/admin/utilisateurs', $this->payload([
-                'email' => "x{$i}@test.sn", 'role' => $role,
-                'password' => 'password1', 'password_confirmation' => 'password1',
-            ]))->assertForbidden();
-        }
-        $this->assertSame(0, DB::table('users')->where('email', 'like', 'x%@test.sn')->count());
-    }
-
-    public function test_un_admin_cree_un_agent_dans_son_etablissement(): void
-    {
-        $etab  = $this->makeEtablissement($this->makeReseau()->id);
-        $autre = $this->makeEtablissement();
-        $admin = $this->makeUser('admin', $etab->id);
-
-        $this->actingAs($admin)->post('/admin/utilisateurs', $this->payload([
-            'email' => 'agent-ok@test.sn', 'role' => 'agent', 'etablissement_id' => $autre->id,
+        $this->actingAs($ar)->post('/admin/utilisateurs', $this->payload([
+            'email' => 'agent-ok@test.sn', 'role' => 'agent', 'etablissement_id' => $etab->id,
             'password' => 'password1', 'password_confirmation' => 'password1',
         ]))->assertRedirect();
 
@@ -136,18 +123,19 @@ class AdminUserSecurityTest extends TestCase
 
     public function test_le_formulaire_ne_propose_que_les_roles_attribuables(): void
     {
-        $etab  = $this->makeEtablissement($this->makeReseau()->id);
-        $admin = $this->makeUser('admin', $etab->id);
+        $ar = $this->makeUser('admin_reseau', null, $this->makeReseau()->id);
 
-        $this->actingAs($admin)->get('/admin/utilisateurs/create')->assertOk()
+        $this->actingAs($ar)->get('/admin/utilisateurs/create')->assertOk()
             ->assertSee('value="agent"', false)
+            ->assertSee('value="collecteur"', false)
             ->assertDontSee('value="superadmin"', false)
-            ->assertDontSee('value="admin_reseau"', false);
+            ->assertDontSee('value="admin_reseau"', false)
+            ->assertDontSee('value="admin"', false);
 
-        // Auto-édition : le rôle courant reste sélectionnable (et seul choix)
-        $this->actingAs($admin)->get("/admin/utilisateurs/{$admin->id}/edit")->assertOk()
-            ->assertSee('value="admin"', false)
-            ->assertDontSee('value="superadmin"', false);
+        // Auto-édition : seul le rôle courant est proposé
+        $this->actingAs($ar)->get("/admin/utilisateurs/{$ar->id}/edit")->assertOk()
+            ->assertSee('value="admin_reseau"', false)
+            ->assertDontSee('value="agent"', false);
     }
 
     public function test_un_admin_reseau_cree_collecteur_et_prestataire_dans_son_reseau(): void
@@ -277,7 +265,6 @@ class AdminUserSecurityTest extends TestCase
         $r = $this->makeReseau();
         $comptes = [
             ['admin_reseau', $this->makeUser('admin_reseau', null, $r->id), 'superadmin'],
-            ['admin',        $this->makeUser('admin', $this->makeEtablissement($r->id)->id), 'admin_reseau'],
             ['superadmin',   $this->makeUser('superadmin'), 'qhse'], // rétrogradation aussi interdite
         ];
 

@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ReferentielSeeder::class,    // Types déchets + contenants
             EtablissementSeeder::class,  // 4 structures médicales
+            ReseauSeeder::class,         // Réseau par défaut + rattachement des structures
             UserSeeder::class,           // Comptes par structure
         ]);
     }

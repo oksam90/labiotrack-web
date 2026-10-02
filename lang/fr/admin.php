@@ -33,7 +33,6 @@ return [
     'confirm_delete_user' => 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
 
     'role_superadmin'    => 'SuperAdmin',
-    'role_admin'         => 'Admin (établissement)',
     'role_admin_reseau'  => 'AdminRéseau',
     'role_qhse'          => 'QHSE',
     'role_agent'         => 'Agent',

@@ -55,7 +55,6 @@ class User extends Authenticatable implements CanResetPasswordContract
     // ── Vérifications de rôle ───────────────────────────────────
     public function isSuperAdmin()  : bool { return $this->role === 'superadmin'; }
     public function isAdminReseau() : bool { return $this->role === 'admin_reseau'; }
-    public function isAdmin()       : bool { return in_array($this->role, ['admin', 'superadmin']); }
     public function isQhse()        : bool { return $this->role === 'qhse'; }
     public function isAgent()       : bool { return $this->role === 'agent'; }
     public function isCollecteur()  : bool { return $this->role === 'collecteur'; }
@@ -76,14 +75,14 @@ class User extends Authenticatable implements CanResetPasswordContract
 
     /**
      * Vue limitée à UN RÉSEAU (et l'ensemble de ses établissements).
-     *  - admin_reseau / admin     : administration à la maille réseau
+     *  - admin_reseau             : administration à la maille réseau
      *  - collecteur / prestataire : opèrent sur tous les établissements
      *                               de leur réseau de rattachement
      * Le réseau est résolu via reseau_id (direct) ou etablissement.reseau_id.
      */
     public function isReseauScoped(): bool
     {
-        return in_array($this->role, ['admin_reseau', 'admin', 'collecteur', 'prestataire']);
+        return in_array($this->role, ['admin_reseau', 'collecteur', 'prestataire']);
     }
 
     /**
@@ -98,17 +97,20 @@ class User extends Authenticatable implements CanResetPasswordContract
     }
 
     /**
-     * Peut accéder aux sections d'administration (admin local, admin réseau,
-     * superadmin).
+     * Peut accéder aux sections d'administration (admin réseau, superadmin).
      */
     public function isAdminOrSuper(): bool
     {
-        return in_array($this->role, ['admin', 'admin_reseau', 'superadmin']);
+        return in_array($this->role, ['admin_reseau', 'superadmin']);
     }
 
-    /** Tous les rôles applicatifs (ordre d'affichage des formulaires). */
+    /**
+     * Tous les rôles applicatifs (ordre d'affichage des formulaires).
+     * Le profil « admin » (admin d'établissement) a été supprimé : ses droits
+     * sont portés par l'admin réseau (migration 2026_10_02_100001).
+     */
     public const ROLES = [
-        'superadmin', 'admin', 'admin_reseau', 'qhse', 'agent',
+        'superadmin', 'admin_reseau', 'qhse', 'agent',
         'collecteur', 'prestataire', 'client_signataire',
     ];
 
@@ -121,8 +123,7 @@ class User extends Authenticatable implements CanResetPasswordContract
     {
         return match ($this->role) {
             'superadmin'   => self::ROLES,
-            'admin_reseau' => ['admin', 'qhse', 'agent', 'collecteur', 'prestataire', 'client_signataire'],
-            'admin'        => ['qhse', 'agent', 'client_signataire'],
+            'admin_reseau' => ['qhse', 'agent', 'collecteur', 'prestataire', 'client_signataire'],
             default        => [],
         };
     }
@@ -134,11 +135,9 @@ class User extends Authenticatable implements CanResetPasswordContract
      *  - superadmin   : tous les comptes
      *  - admin_reseau : comptes de rôle attribuable, dans SON réseau (y compris
      *                   collecteurs / prestataires rattachés à ce réseau)
-     *  - admin        : comptes de rôle attribuable, dans SON établissement
      *  - soi-même     : toujours (le contrôleur fige alors rôle et rattachement)
      *
-     * Fail-closed : un admin_reseau sans réseau / admin sans établissement
-     * ne gère personne d'autre que lui-même.
+     * Fail-closed : un admin_reseau sans réseau ne gère personne d'autre que lui-même.
      */
     public function canManageUser(object $target): bool
     {
@@ -152,11 +151,6 @@ class User extends Authenticatable implements CanResetPasswordContract
             return $target->etablissement_id
                 && (int) Etablissement::withoutGlobalScopes()
                     ->whereKey($target->etablissement_id)->value('reseau_id') === (int) $this->reseau_id;
-        }
-
-        if ($this->role === 'admin') {
-            return $this->etablissement_id
-                && (int) $target->etablissement_id === (int) $this->etablissement_id;
         }
 
         return false;
@@ -202,7 +196,7 @@ class User extends Authenticatable implements CanResetPasswordContract
      * Applique un filtre sur une query DB::table() en respectant le
      * périmètre du rôle.
      *  - superadmin / collecteur / prestataire → aucun filtre (vue globale)
-     *  - admin_reseau / admin → filtré par les établissements de leur réseau
+     *  - admin_reseau → filtré par les établissements de leur réseau
      *  - qhse / agent → filtré par leur établissement
      *
      * @param \Illuminate\Database\Query\Builder $query
