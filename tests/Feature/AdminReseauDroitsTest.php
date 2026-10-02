@@ -106,4 +106,27 @@ class AdminReseauDroitsTest extends TestCase
             $page->assertSee(route($route), false);
         }
     }
+
+    /** Constat utilisateur n°1 : les 7 types plastiques dans « Type déchet » (Contenants). */
+    public function test_le_formulaire_contenants_propose_les_types_plastiques(): void
+    {
+        $page = $this->actingAs($this->ar)->get('/admin/contenants')->assertOk();
+
+        foreach (['PET (Polyéthylène Téréphtalate)', 'PEHD ou PE-HD (Polyéthylène Haute Densité)',
+                  'PVC (Polychlorure de Vinyle)', 'PELD ou LDPE (Polyéthylène Basse Densité)',
+                  'PP (Polypropylène)', 'PS (Polystyrène)',
+                  'Autres plastiques (mélanges ou polycarbonate)'] as $type) {
+            $page->assertSee($type);
+        }
+    }
+
+    /** Constat utilisateur n°2 : rôles proposés à l'admin réseau à la création d'un compte. */
+    public function test_le_formulaire_utilisateur_de_l_admin_reseau(): void
+    {
+        $this->actingAs($this->ar)->get('/admin/utilisateurs/create')->assertOk()
+            ->assertSee('value="collecteur"', false)
+            ->assertSee('value="prestataire"', false)
+            ->assertDontSee('value="admin"', false)
+            ->assertDontSee('Admin (établissement)');
+    }
 }

@@ -64,7 +64,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'nom'              => 'required|string|max:255',
-            'type'             => 'required|in:clinique,hopital,cabinet,laboratoire',
+            'type'             => ['required', Rule::in(\App\Models\Etablissement::TYPES)],
             'adresse'          => 'required|string',
             'ville'            => 'nullable|string|max:255',
             'responsable_qhse' => 'nullable|string|max:255',
@@ -110,7 +110,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'nom'       => 'required|string|max:255',
-            'type'      => 'required|in:clinique,hopital,cabinet,laboratoire',
+            'type'      => ['required', Rule::in(\App\Models\Etablissement::TYPES)],
             'adresse'   => 'required|string',
             'reseau_id' => 'nullable|exists:reseaux,id',
         ]);

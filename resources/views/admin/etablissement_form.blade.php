@@ -10,7 +10,7 @@
 <div class="col-md-8"><label class="form-label">{{ __('admin.col_name') }} *</label><input type="text" name="nom" class="form-control" value="{{ $etablissement->nom ?? '' }}" required></div>
 <div class="col-md-4"><label class="form-label">{{ __('admin.col_type') }} *</label>
 <select name="type" class="form-select" required>
-@foreach(['clinique','hopital','cabinet','laboratoire'] as $t)
+@foreach(\App\Models\Etablissement::TYPES as $t)
 <option value="{{ $t }}" {{ ($etablissement->type ?? '') === $t ? 'selected' : '' }}>{{ __('admin.etab_type_' . $t) }}</option>
 @endforeach
 </select></div>

@@ -61,6 +61,7 @@ return [
     'etab_type_hopital'  => 'Hospital',
     'etab_type_cabinet'  => 'Practice',
     'etab_type_laboratoire' => 'Laboratory',
+    'etab_type_industrielle' => 'Industrial',
 
     // ── Services ────────────────────────────────────────────────
     'page_services_title' => 'Services',

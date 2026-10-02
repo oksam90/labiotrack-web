@@ -21,6 +21,12 @@ class Etablissement extends Model
 
     protected $table = 'etablissements';
 
+    /**
+     * Types d'établissement : source unique pour la validation et le
+     * formulaire (doit rester aligné sur l'ENUM etablissements.type).
+     */
+    public const TYPES = ['clinique', 'hopital', 'cabinet', 'laboratoire', 'industrielle'];
+
     // ✅ FIX #3 — slug et parametres manquaient dans $fillable
     protected $fillable = [
         'reseau_id','nom','type','adresse','ville','telephone',
@@ -50,11 +56,8 @@ class Etablissement extends Model
     // ── Accesseurs ─────────────────────────────────────────────
     public function getTypeLabelAttribute(): string
     {
-        return [
-            'clinique'    => 'Clinique',
-            'hopital'     => 'Hôpital',
-            'cabinet'     => 'Cabinet',
-            'laboratoire' => 'Laboratoire',
-        ][$this->type] ?? $this->type;
+        return in_array($this->type, self::TYPES, true)
+            ? __('admin.etab_type_' . $this->type)
+            : (string) $this->type;
     }
 }
